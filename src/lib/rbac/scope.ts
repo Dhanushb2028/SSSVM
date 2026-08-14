@@ -89,3 +89,33 @@ export async function requireSectionActionAccess(
 
   throw new ForbiddenError();
 }
+
+/**
+ * Like requireSectionActionAccess, but for branch-wide screens with no
+ * per-section ownership to check (e.g. the school calendar): any TEACHER at
+ * the branch may act, not just class teachers of a specific section.
+ */
+export async function requireBranchActionAccess(
+  session: AppSession | null,
+  branchId: string,
+  moduleKey: ModuleKey,
+): Promise<void> {
+  if (!session) throw new UnauthenticatedError();
+
+  if (session.role === "ADMIN") {
+    if (!hasPermission(session, moduleKey, "EDIT") && !hasPermission(session, moduleKey, "CREATE")) {
+      throw new ForbiddenError();
+    }
+    assertBranchAccess(session, branchId);
+    return;
+  }
+
+  if (session.role === "TEACHER") {
+    if (!session.staffMemberId) throw new ForbiddenError();
+    const staff = await db.staffMember.findUnique({ where: { id: session.staffMemberId }, select: { branchId: true } });
+    if (!staff || staff.branchId !== branchId) throw new ForbiddenError("Not your branch");
+    return;
+  }
+
+  throw new ForbiddenError();
+}

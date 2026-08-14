@@ -22,6 +22,17 @@ import {
   ClipboardCheck,
   ClipboardList,
   CalendarDays,
+  BookMarked,
+  CalendarClock,
+  NotebookPen,
+  ListChecks,
+  FileEdit,
+  PenLine,
+  Ticket,
+  FileBarChart,
+  Trophy,
+  Table2,
+  Layers,
 } from "lucide-react";
 import { requireRole, hasPermission } from "@/lib/rbac/permissions";
 import { getSession } from "@/lib/auth/session";
@@ -54,6 +65,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { label: "Academic Years", href: "/admin/system-setup/academic-years", icon: icon(CalendarRange), module: "system.academic_years" },
     { label: "Organizations", href: "/admin/system-setup/organizations", icon: icon(Landmark), module: "system.organizations" },
     { label: "Branches", href: "/admin/system-setup/branches", icon: icon(Building2), module: "system.branches" },
+    { label: "Courses & Subjects", href: "/admin/system-setup/master-data", icon: icon(Layers), module: "system.master_data" },
   ]);
   if (systemSetup) navSections.push(systemSetup);
 
@@ -91,8 +103,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const academics = buildSection(session, "Academics", [
     { label: "Timetable", href: "/admin/academics/timetable", icon: icon(CalendarDays), module: "academics.timetable" },
+    { label: "Syllabus", href: "/admin/academics/syllabus", icon: icon(BookMarked), module: "academics.syllabus" },
+    { label: "Schedule / Calendar", href: "/admin/academics/schedule", icon: icon(CalendarClock), module: "academics.schedule" },
+    { label: "Monthly Lesson Plans", href: "/admin/academics/lesson-plans", icon: icon(NotebookPen), module: "academics.lesson_plans" },
   ]);
   if (academics) navSections.push(academics);
+
+  const exams = buildSection(session, "Exams", [
+    { label: "Exam Types", href: "/admin/exams/types", icon: icon(ListChecks), module: "exams.types" },
+    { label: "Exams", href: "/admin/exams/exams", icon: icon(FileEdit), module: "exams.exams" },
+    { label: "Exam Timetable", href: "/admin/exams/exam-timetable", icon: icon(Table2), module: "exams.timetable" },
+    { label: "Marks Entry", href: "/admin/exams/marks-entry", icon: icon(PenLine), module: "exams.marks" },
+    { label: "Hall Tickets", href: "/admin/exams/hall-tickets", icon: icon(Ticket), module: "exams.hall_tickets" },
+    { label: "Progress Reports", href: "/admin/exams/progress-reports", icon: icon(FileBarChart), module: "exams.progress_reports" },
+    { label: "Competitive Exam Marks", href: "/admin/exams/competitive", icon: icon(Trophy), module: "exams.competitive" },
+    { label: "Result Reports", href: "/admin/exams/results", icon: icon(BarChart3), module: "exams.reports" },
+  ]);
+  if (exams) navSections.push(exams);
 
   navSections.push({
     title: "Account",

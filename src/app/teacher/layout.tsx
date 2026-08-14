@@ -1,4 +1,13 @@
-import { LayoutDashboard, UserCircle, ClipboardCheck, CalendarDays } from "lucide-react";
+import {
+  LayoutDashboard,
+  UserCircle,
+  ClipboardCheck,
+  CalendarDays,
+  BookMarked,
+  CalendarClock,
+  NotebookPen,
+  PenLine,
+} from "lucide-react";
 import { requireRole } from "@/lib/rbac/permissions";
 import { getSession } from "@/lib/auth/session";
 import { DesktopShell, type NavSection } from "@/components/nav/desktop-shell";
@@ -18,6 +27,10 @@ export default async function TeacherLayout({ children }: { children: React.Reac
       items: [
         { label: "Mark Attendance", href: "/teacher/attendance/mark", icon: <ClipboardCheck aria-hidden="true" className="size-4" /> },
         { label: "Timetable", href: "/teacher/timetable", icon: <CalendarDays aria-hidden="true" className="size-4" /> },
+        { label: "Syllabus", href: "/teacher/syllabus", icon: <BookMarked aria-hidden="true" className="size-4" /> },
+        { label: "Schedule / Calendar", href: "/teacher/schedule", icon: <CalendarClock aria-hidden="true" className="size-4" /> },
+        { label: "Monthly Lesson Plans", href: "/teacher/lesson-plans", icon: <NotebookPen aria-hidden="true" className="size-4" /> },
+        { label: "Marks Entry", href: "/teacher/exams/marks-entry", icon: <PenLine aria-hidden="true" className="size-4" /> },
       ],
     },
     {

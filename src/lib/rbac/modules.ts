@@ -9,6 +9,7 @@ export const MODULE_GROUPS = [
       { key: "system.academic_years", label: "Academic Years" },
       { key: "system.organizations", label: "Organizations" },
       { key: "system.branches", label: "Branches" },
+      { key: "system.master_data", label: "Courses & Subjects" },
     ],
   },
   {

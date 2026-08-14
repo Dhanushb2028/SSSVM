@@ -16,38 +16,42 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model Organization {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  branches Branch[]
-  courses  Course[]
-  subjects Subject[]
+  branches         Branch[]
+  courses          Course[]
+  subjects         Subject[]
+  examTypes        ExamType[]
+  competitiveExams CompetitiveExam[]
 
   @@map("organizations")
 }
 
 model Branch {
-  id             String  @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   name           String
   city           String?
   address        String?
   phone          String?
-  isHostel       Boolean @default(false)
+  isHostel       Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization  Organization   @relation(fields: [organizationId], references: [id])
-  academicYears AcademicYear[]
-  sections      Section[]
-  students      Student[]
-  staffMembers  StaffMember[]
-  users         User[]
-  appBanners    AppBanner[]
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  academicYears  AcademicYear[]
+  sections       Section[]
+  students       Student[]
+  staffMembers   StaffMember[]
+  users          User[]
+  appBanners     AppBanner[]
+  scheduleEvents ScheduleEvent[]
+  exams          Exam[]
 
   @@index([organizationId])
   @@map("branches")
@@ -65,6 +69,7 @@ model AcademicYear {
 
   branch   Branch    @relation(fields: [branchId], references: [id])
   sections Section[]
+  exams    Exam[]
 
   @@unique([branchId, name])
   @@index([branchId])
@@ -72,10 +77,10 @@ model AcademicYear {
 }
 
 model Course {
-  id             String  @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   name           String // e.g. "Grade 5"
-  orderIndex     Int     @default(0)
+  orderIndex     Int       @default(0)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
@@ -89,7 +94,7 @@ model Course {
 }
 
 model Subject {
-  id             String  @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   name           String
   code           String?
@@ -97,8 +102,11 @@ model Subject {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization     Organization        @relation(fields: [organizationId], references: [id])
   timetableEntries TimetableEntry[]
+  syllabusTopics   SyllabusTopic[]
+  lessonPlans      MonthlyLessonPlan[]
+  examSubjects     ExamSubject[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -107,7 +115,7 @@ model Subject {
 
 // A Section is a year-specific mapping of a Course to a Branch, e.g. "5-A" for 2025-2026.
 model Section {
-  id             String  @id @default(cuid())
+  id             String    @id @default(cuid())
   academicYearId String
   branchId       String
   courseId       String
@@ -118,13 +126,15 @@ model Section {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
-  branch       Branch       @relation(fields: [branchId], references: [id])
-  course       Course       @relation(fields: [courseId], references: [id])
-  classTeacher StaffMember? @relation("SectionClassTeacher", fields: [classTeacherId], references: [id])
-  students     Student[]
-  attendance      Attendance[]
+  academicYear     AcademicYear        @relation(fields: [academicYearId], references: [id])
+  branch           Branch              @relation(fields: [branchId], references: [id])
+  course           Course              @relation(fields: [courseId], references: [id])
+  classTeacher     StaffMember?        @relation("SectionClassTeacher", fields: [classTeacherId], references: [id])
+  students         Student[]
+  attendance       Attendance[]
   timetableEntries TimetableEntry[]
+  syllabusTopics   SyllabusTopic[]
+  lessonPlans      MonthlyLessonPlan[]
 
   @@unique([academicYearId, branchId, courseId, name])
   @@index([academicYearId])
@@ -173,11 +183,13 @@ model Student {
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
 
-  branch     Branch            @relation(fields: [branchId], references: [id])
-  section    Section?          @relation(fields: [sectionId], references: [id])
-  guardians  StudentGuardian[]
-  user       User?
-  attendance Attendance[]
+  branch               Branch                @relation(fields: [branchId], references: [id])
+  section              Section?              @relation(fields: [sectionId], references: [id])
+  guardians            StudentGuardian[]
+  user                 User?
+  attendance           Attendance[]
+  examMarks            ExamMark[]
+  competitiveExamMarks CompetitiveExamMark[]
 
   @@index([branchId])
   @@index([sectionId])
@@ -187,15 +199,15 @@ model Student {
 }
 
 model Guardian {
-  id           String   @id @default(cuid())
-  firstName    String
-  lastName     String
-  phone        String   @unique
-  email        String?
-  address      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  deletedAt    DateTime?
+  id        String    @id @default(cuid())
+  firstName String
+  lastName  String
+  phone     String    @unique
+  email     String?
+  address   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   students StudentGuardian[]
   user     User?
@@ -229,23 +241,23 @@ model StudentGuardian {
 }
 
 model StaffMember {
-  id            String   @id @default(cuid())
-  branchId      String
-  employeeCode  String   @unique
-  firstName     String
-  lastName      String
-  designation   String
-  phone         String
-  email         String?
-  address       String?
-  joinDate      DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  deletedAt     DateTime?
+  id           String    @id @default(cuid())
+  branchId     String
+  employeeCode String    @unique
+  firstName    String
+  lastName     String
+  designation  String
+  phone        String
+  email        String?
+  address      String?
+  joinDate     DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
 
-  branch           Branch    @relation(fields: [branchId], references: [id])
+  branch           Branch           @relation(fields: [branchId], references: [id])
   user             User?
-  classesAsTeacher Section[] @relation("SectionClassTeacher")
+  classesAsTeacher Section[]        @relation("SectionClassTeacher")
   timetableEntries TimetableEntry[]
 
   @@index([branchId])
@@ -288,7 +300,7 @@ model PermissionProfile {
 
 // One row per (profile, module, action) grant, e.g. ("Finance Staff", "finance.fees", VIEW).
 model PermissionGrant {
-  id                  String            @id @default(cuid())
+  id                  String           @id @default(cuid())
   permissionProfileId String
   module              String
   action              PermissionAction
@@ -327,9 +339,9 @@ model User {
   guardian          Guardian?          @relation(fields: [guardianId], references: [id])
   staffMember       StaffMember?       @relation(fields: [staffMemberId], references: [id])
 
-  sessions          Session[]
-  auditLogs         AuditLog[]
-  attendanceMarked  Attendance[]
+  sessions         Session[]
+  auditLogs        AuditLog[]
+  attendanceMarked Attendance[]
 
   @@index([role])
   @@index([branchId])
@@ -337,13 +349,13 @@ model User {
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  userId       String
-  tokenHash    String   @unique
-  expiresAt    DateTime
-  userAgent    String?
-  ipAddress    String?
-  createdAt    DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 
@@ -404,15 +416,15 @@ enum AttendanceStatus {
 }
 
 model Attendance {
-  id             String            @id @default(cuid())
+  id             String           @id @default(cuid())
   studentId      String
   sectionId      String
-  date           DateTime          @db.Date
+  date           DateTime         @db.Date
   status         AttendanceStatus
   markedByUserId String?
   remarks        String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   student  Student @relation(fields: [studentId], references: [id])
   section  Section @relation(fields: [sectionId], references: [id])
@@ -450,4 +462,165 @@ model TimetableEntry {
   @@unique([sectionId, weekday, period])
   @@index([sectionId])
   @@map("timetable_entries")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4: Syllabus, Schedule, Lesson Plans (Section 6.7)
+// ---------------------------------------------------------------------------
+
+model SyllabusTopic {
+  id            String    @id @default(cuid())
+  sectionId     String
+  subjectId     String
+  topic         String
+  description   String?
+  plannedDate   DateTime  @db.Date
+  completedDate DateTime? @db.Date
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  section Section @relation(fields: [sectionId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  @@index([sectionId])
+  @@index([subjectId])
+  @@map("syllabus_topics")
+}
+
+model ScheduleEvent {
+  id          String    @id @default(cuid())
+  branchId    String
+  title       String
+  description String?
+  startDate   DateTime  @db.Date
+  endDate     DateTime? @db.Date
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+  @@map("schedule_events")
+}
+
+model MonthlyLessonPlan {
+  id        String   @id @default(cuid())
+  sectionId String
+  subjectId String
+  month     Int // 1-12
+  year      Int
+  planText  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  section Section @relation(fields: [sectionId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  @@unique([sectionId, subjectId, month, year])
+  @@index([sectionId])
+  @@map("monthly_lesson_plans")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4: Exams & Assessments (Section 6.8)
+// ---------------------------------------------------------------------------
+
+model ExamType {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  exams        Exam[]
+
+  @@unique([organizationId, name])
+  @@map("exam_types")
+}
+
+model Exam {
+  id             String    @id @default(cuid())
+  branchId       String
+  academicYearId String
+  examTypeId     String
+  name           String
+  startDate      DateTime  @db.Date
+  endDate        DateTime  @db.Date
+  includeInRank  Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  branch       Branch        @relation(fields: [branchId], references: [id])
+  academicYear AcademicYear  @relation(fields: [academicYearId], references: [id])
+  examType     ExamType      @relation(fields: [examTypeId], references: [id])
+  subjects     ExamSubject[]
+
+  @@index([branchId])
+  @@index([academicYearId])
+  @@map("exams")
+}
+
+// Maps an Exam to a Subject with the max marks for that pairing, and (Section 6.8
+// "Exam Timetable") the date that subject's paper is held.
+model ExamSubject {
+  id        String    @id @default(cuid())
+  examId    String
+  subjectId String
+  maxMarks  Int
+  passMarks Int?
+  examDate  DateTime? @db.Date
+
+  exam    Exam       @relation(fields: [examId], references: [id])
+  subject Subject    @relation(fields: [subjectId], references: [id])
+  marks   ExamMark[]
+
+  @@unique([examId, subjectId])
+  @@map("exam_subjects")
+}
+
+model ExamMark {
+  id              String   @id @default(cuid())
+  examSubjectId   String
+  studentId       String
+  marksObtained   Float
+  enteredByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  examSubject ExamSubject @relation(fields: [examSubjectId], references: [id])
+  student     Student     @relation(fields: [studentId], references: [id])
+
+  @@unique([examSubjectId, studentId])
+  @@index([studentId])
+  @@map("exam_marks")
+}
+
+model CompetitiveExam {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  examDate       DateTime? @db.Date
+  createdAt      DateTime  @default(now())
+
+  organization Organization          @relation(fields: [organizationId], references: [id])
+  marks        CompetitiveExamMark[]
+
+  @@map("competitive_exams")
+}
+
+model CompetitiveExamMark {
+  id                String   @id @default(cuid())
+  competitiveExamId String
+  studentId         String
+  marksObtained     Float
+  maxMarks          Float
+  remarks           String?
+  createdAt         DateTime @default(now())
+
+  competitiveExam CompetitiveExam @relation(fields: [competitiveExamId], references: [id])
+  student         Student         @relation(fields: [studentId], references: [id])
+
+  @@unique([competitiveExamId, studentId])
+  @@map("competitive_exam_marks")
 }

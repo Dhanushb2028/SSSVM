@@ -2,9 +2,9 @@
 
 A PowerSchool-style school management system for **Sree Siva Shankar Vidya Mandir** (K.R.M. Colony) — four portals (Admin, Teacher, Student, Parent) on one Next.js app, one PostgreSQL database, and one Prisma schema. See `ARCHITECTURE.md` for the full stack rationale and design decisions.
 
-## Status: Phase 3 of 10 (Attendance & Timetable)
+## Status: Phase 4 of 10 (Exams & Assessments, Syllabus/Schedule/Lesson Plans)
 
-This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–3 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, and Attendance + Timetable for Admin and Teacher. Phases 4–10 (Exams, Communication, Finance, Admissions/Certificates, HR/Transport/Hostel, the Student/Parent portals' full feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
+This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–4 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, Attendance + Timetable, and now Exams & Assessments plus Syllabus/Schedule/Lesson Plans for Admin and Teacher. Phases 5–10 (Communication, Finance, Admissions/Certificates, HR/Transport/Hostel, the Student/Parent portals' full feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
 
 ## Running locally
 
@@ -72,6 +72,14 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **New dual-role authorization pattern**: `requireSectionActionAccess()` in `lib/rbac/scope.ts` — the first RBAC helper usable by both Admin (module-permission-scoped) and Teacher (row-scoped: only sections they're the class teacher of) on the *same* mutation. Everywhere else, `requirePermission()` (Admin-only) and row-scope helpers stayed separate; attendance/timetable needed both at once, so this composes them rather than special-casing role checks inline in every action.
 - **Teacher dashboard** now shows today's per-section attendance status (marked/not marked) with a one-click link into the mark-attendance flow for anything still outstanding.
 
+## What's built (Phase 4 adds)
+
+- **Courses & Subjects master data screen** — a gap from Phase 1/2 (both existed only as seed data with no admin UI) fixed now because Exams genuinely needs a manageable subject list.
+- **Syllabus, School Calendar, Monthly Lesson Plans**: section/subject-scoped CRUD (Syllabus, Lesson Plans) and a branch-wide school calendar, all shared between Admin and Teacher via the new `requireBranchActionAccess()` helper (the branch-wide sibling of Phase 3's `requireSectionActionAccess()` — for screens with no single "owning section," e.g. any teacher at the branch may post a calendar event, not just class teachers).
+- **Exams & Assessments, full pipeline**: Exam Types → Exams (with a dynamic per-subject max-marks/pass-marks/exam-date editor) → subject-filtered Marks Entry (shared Admin/Teacher, optional "send SMS on save" via the stub `NotificationProvider`) → Hall Tickets and Progress Reports (printable, `@media print` layouts) → Result Reports (exam × section, computed rank, CSV export) → Competitive Exam Marks (Admin-only, with delete).
+- **Rank calculation is a pure, unit-tested function** (`computeRanks()` in `server/services/exam-rank.ts`) implementing standard "1224" competition ranking (ties share a rank, the next rank skips ahead) — the spec's explicit "core business logic needs unit tests" requirement.
+- **Marks-entry validation is server-enforced**: a mark exceeding an exam subject's max marks is rejected with a clear error, not silently clamped or accepted.
+
 ## What's built (Phase 1)
 
 - **Auth**: custom database-backed sessions (bcrypt hashing, httpOnly cookies, in-memory login rate limiting, instant force-logout on account deactivation/password reset).
@@ -95,6 +103,9 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **`Student.leftDate`/`leftReason` were added** (beyond the Section 5 minimum) because the Outgoing Students report needs them to be meaningful; a bare `status = LEFT` with no timestamp wasn't enough to build a real report against.
 - **"A teacher's section" means class-teacher-of, for now.** There's no separate per-subject teaching-assignment model yet, so Attendance/Timetable scope a Teacher to sections where `Section.classTeacherId` matches them. A subject-teacher (who isn't a class teacher) can't yet mark attendance or edit a timetable for a section they only teach one subject in — revisit if/when a `TeachingAssignment` model is introduced for marks entry in Phase 4.
 - **Attendance is one status per student per calendar day**, not per period — matches how the spec describes daily attendance marking (6.6) rather than per-period attendance.
+- **Hall Ticket fee-verification gating is not yet enforced.** The spec requires blocking generation until fees are sufficiently paid; that data doesn't exist until Finance (Phase 6). The screen says so explicitly rather than silently pretending the check passed. The `HALL_TICKET_FEE_THRESHOLD_PERCENT` env var from Phase 1 is still the intended config point once it's wired up.
+- **`ExamMark` is normalized through `ExamSubject`** (exam × subject → maxMarks/passMarks/examDate) rather than storing maxMarks redundantly on every mark row as Section 5's literal field list suggests — one row per exam+subject instead of duplicating the max across every student's mark, which also gives the "Exam Timetable" per-subject date for free.
+- **Competitive Exam Marks' student picker lists all active students** (capped at 500) rather than a type-ahead search — fine at this school's scale; revisit with a real search endpoint if a deployment has thousands of active students.
 
 ## Open follow-ups for v2 (beyond later-phase feature work)
 
