@@ -2,9 +2,9 @@
 
 A PowerSchool-style school management system for **Sree Siva Shankar Vidya Mandir** (K.R.M. Colony) — four portals (Admin, Teacher, Student, Parent) on one Next.js app, one PostgreSQL database, and one Prisma schema. See `ARCHITECTURE.md` for the full stack rationale and design decisions.
 
-## Status: Phase 4 of 10 (Exams & Assessments, Syllabus/Schedule/Lesson Plans)
+## Status: Phase 5 of 10 (Communication)
 
-This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–4 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, Attendance + Timetable, and now Exams & Assessments plus Syllabus/Schedule/Lesson Plans for Admin and Teacher. Phases 5–10 (Communication, Finance, Admissions/Certificates, HR/Transport/Hostel, the Student/Parent portals' full feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
+This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–5 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, Attendance + Timetable, Exams & Assessments, Syllabus/Schedule/Lesson Plans, and now the full Communication module (Homework with student submission, Notifications, Circulars, Gallery, Videos, Chat, Bulk SMS) across **all four portals**. Phases 6–10 (Finance, Admissions/Certificates, HR/Transport/Hostel, the rest of the Student/Parent portals' feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
 
 ## Running locally
 
@@ -80,6 +80,16 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **Rank calculation is a pure, unit-tested function** (`computeRanks()` in `server/services/exam-rank.ts`) implementing standard "1224" competition ranking (ties share a rank, the next rank skips ahead) — the spec's explicit "core business logic needs unit tests" requirement.
 - **Marks-entry validation is server-enforced**: a mark exceeding an exam subject's max marks is rejected with a clear error, not silently clamped or accepted.
 
+## What's built (Phase 5 adds)
+
+- **Homework, with the student submission flow the spec calls out as new**: Admin/Teacher post per section/subject (with file attachments), a submission-tracking view shows who has/hasn't submitted, Students view and submit (or resubmit) from their own portal, Parent gets a read-only view per linked child. Submissions are automatically flagged late server-side by comparing to the due date at submit time.
+- **Notifications**: targeted to everyone in a branch (Admin only), a section, or one student — Student/Parent get an in-app feed.
+- **Circulars**: school-wide or section-targeted notices, surfaced to Student/Parent as "Messages" per the spec's relabeling.
+- **Gallery & Videos**: branch-scoped albums/photos and video links, manageable by Admin/Teacher, visible to everyone including Student/Parent.
+- **Chat**: one persistent thread per student, shared by all of that student's guardians, the student themself, and any staff with access (their class teacher or any Admin) — not a private 1:1 channel per participant pair.
+- **Bulk SMS**: Admin-only, permission-gated (`comms.sms`), targeted at all guardians in a branch or all guardians in one course, routed through the stub `NotificationProvider`. Follows the confirm-then-audit-log pattern required for bulk sends (Section 9).
+- **Every Communication feature ships to all four portals in this phase** (not deferred to Phase 9 like other modules' Student/Parent views) — the spec explicitly calls this out for 6.9, unlike Attendance/Exams/Timetable where Student/Parent views are Phase 9 work.
+
 ## What's built (Phase 1)
 
 - **Auth**: custom database-backed sessions (bcrypt hashing, httpOnly cookies, in-memory login rate limiting, instant force-logout on account deactivation/password reset).
@@ -106,6 +116,8 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **Hall Ticket fee-verification gating is not yet enforced.** The spec requires blocking generation until fees are sufficiently paid; that data doesn't exist until Finance (Phase 6). The screen says so explicitly rather than silently pretending the check passed. The `HALL_TICKET_FEE_THRESHOLD_PERCENT` env var from Phase 1 is still the intended config point once it's wired up.
 - **`ExamMark` is normalized through `ExamSubject`** (exam × subject → maxMarks/passMarks/examDate) rather than storing maxMarks redundantly on every mark row as Section 5's literal field list suggests — one row per exam+subject instead of duplicating the max across every student's mark, which also gives the "Exam Timetable" per-subject date for free.
 - **Competitive Exam Marks' student picker lists all active students** (capped at 500) rather than a type-ahead search — fine at this school's scale; revisit with a real search endpoint if a deployment has thousands of active students.
+- **Student/Parent mobile bottom nav stays at 4 items** (Home, Homework, Messages, Profile) rather than growing one tab per new module — Notifications/Gallery/Videos/Chat are reachable as quick-link cards on the Home dashboard instead, matching the spec's own description of the Phase 9 parent home ("quick links into ... plus a recent-notifications feed") rather than overloading the tab bar.
+- **Chat has no admin/teacher search-by-name** beyond the plain student list scoped to their sections/branch — fine at this scale, would want pagination/search for a larger deployment.
 
 ## Open follow-ups for v2 (beyond later-phase feature work)
 

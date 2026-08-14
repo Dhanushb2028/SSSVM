@@ -1,7 +1,16 @@
+import { Bell, Image as ImageIcon, Video, MessageCircle } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { QuickLinksGrid } from "@/components/shared/quick-links-grid";
+
+const QUICK_LINKS = [
+  { label: "Notifications", href: "/student/notifications", icon: Bell },
+  { label: "Gallery", href: "/student/gallery", icon: ImageIcon },
+  { label: "Videos", href: "/student/videos", icon: Video },
+  { label: "Chat", href: "/student/chat", icon: MessageCircle },
+];
 
 export default async function StudentDashboardPage() {
   const session = await getSession();
@@ -39,12 +48,14 @@ export default async function StudentDashboardPage() {
         </CardContent>
       </Card>
 
+      <QuickLinksGrid links={QUICK_LINKS} />
+
       <Card>
         <CardHeader>
           <CardTitle>Coming soon</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Attendance, homework, exams, fees, and timetable will appear here as those modules roll out.
+          Attendance, exam results, fees, and timetable views will appear here as those modules roll out.
         </CardContent>
       </Card>
     </div>

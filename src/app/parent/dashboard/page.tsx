@@ -1,6 +1,15 @@
+import { Bell, Image as ImageIcon, Video, MessageCircle } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { QuickLinksGrid } from "@/components/shared/quick-links-grid";
+
+const QUICK_LINKS = [
+  { label: "Notifications", href: "/parent/notifications", icon: Bell },
+  { label: "Gallery", href: "/parent/gallery", icon: ImageIcon },
+  { label: "Videos", href: "/parent/videos", icon: Video },
+  { label: "Chat", href: "/parent/chat", icon: MessageCircle },
+];
 
 export default async function ParentDashboardPage() {
   const session = await getSession();
@@ -41,13 +50,14 @@ export default async function ParentDashboardPage() {
         ))
       )}
 
+      <QuickLinksGrid links={QUICK_LINKS} />
+
       <Card>
         <CardHeader>
           <CardTitle>Coming soon</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Attendance, homework, exam results, fee status, timetable, and circulars will appear here as those modules
-          roll out.
+          Attendance, exam results, fee status, and timetable views will appear here as those modules roll out.
         </CardContent>
       </Card>
     </div>

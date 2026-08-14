@@ -33,6 +33,13 @@ import {
   Trophy,
   Table2,
   Layers,
+  BookOpen,
+  Bell,
+  Megaphone,
+  Image as ImageIcon,
+  Video,
+  MessageCircle,
+  Send,
 } from "lucide-react";
 import { requireRole, hasPermission } from "@/lib/rbac/permissions";
 import { getSession } from "@/lib/auth/session";
@@ -120,6 +127,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { label: "Result Reports", href: "/admin/exams/results", icon: icon(BarChart3), module: "exams.reports" },
   ]);
   if (exams) navSections.push(exams);
+
+  const communication = buildSection(session, "Communication", [
+    { label: "Homework", href: "/admin/homework", icon: icon(BookOpen), module: "homework.manage" },
+    { label: "Notifications", href: "/admin/notifications", icon: icon(Bell), module: "comms.notifications" },
+    { label: "Circulars", href: "/admin/circulars", icon: icon(Megaphone), module: "comms.circulars" },
+    { label: "Gallery", href: "/admin/gallery", icon: icon(ImageIcon), module: "comms.gallery" },
+    { label: "Videos", href: "/admin/videos", icon: icon(Video), module: "comms.videos" },
+    { label: "Chat", href: "/admin/chat", icon: icon(MessageCircle), module: "comms.chat" },
+    { label: "Bulk SMS", href: "/admin/bulk-sms", icon: icon(Send), module: "comms.sms" },
+  ]);
+  if (communication) navSections.push(communication);
 
   navSections.push({
     title: "Account",

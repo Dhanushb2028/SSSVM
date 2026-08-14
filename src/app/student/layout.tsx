@@ -1,4 +1,4 @@
-import { LayoutDashboard, UserCircle } from "lucide-react";
+import { LayoutDashboard, BookOpen, MessageSquare, UserCircle } from "lucide-react";
 import { requireRole } from "@/lib/rbac/permissions";
 import { getSession } from "@/lib/auth/session";
 import { MobileShell } from "@/components/nav/mobile-shell";
@@ -10,6 +10,8 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   const navItems = [
     { label: "Home", href: "/student/dashboard", icon: <LayoutDashboard aria-hidden="true" className="size-5" /> },
+    { label: "Homework", href: "/student/homework", icon: <BookOpen aria-hidden="true" className="size-5" /> },
+    { label: "Messages", href: "/student/messages", icon: <MessageSquare aria-hidden="true" className="size-5" /> },
     { label: "Profile", href: "/student/profile", icon: <UserCircle aria-hidden="true" className="size-5" /> },
   ];
 

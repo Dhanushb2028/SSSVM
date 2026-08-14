@@ -52,6 +52,10 @@ model Branch {
   appBanners     AppBanner[]
   scheduleEvents ScheduleEvent[]
   exams          Exam[]
+  notifications  Notification[]
+  circulars      Circular[]
+  galleryAlbums  GalleryAlbum[]
+  videos         Video[]
 
   @@index([organizationId])
   @@map("branches")
@@ -107,6 +111,7 @@ model Subject {
   syllabusTopics   SyllabusTopic[]
   lessonPlans      MonthlyLessonPlan[]
   examSubjects     ExamSubject[]
+  homework         Homework[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -135,6 +140,9 @@ model Section {
   timetableEntries TimetableEntry[]
   syllabusTopics   SyllabusTopic[]
   lessonPlans      MonthlyLessonPlan[]
+  homework         Homework[]
+  notifications    Notification[]
+  circulars        Circular[]
 
   @@unique([academicYearId, branchId, courseId, name])
   @@index([academicYearId])
@@ -190,6 +198,9 @@ model Student {
   attendance           Attendance[]
   examMarks            ExamMark[]
   competitiveExamMarks CompetitiveExamMark[]
+  homeworkSubmissions  HomeworkSubmission[]
+  notifications        Notification[]
+  chatThread           ChatThread?
 
   @@index([branchId])
   @@index([sectionId])
@@ -342,6 +353,7 @@ model User {
   sessions         Session[]
   auditLogs        AuditLog[]
   attendanceMarked Attendance[]
+  chatMessages     ChatMessage[]
 
   @@index([role])
   @@index([branchId])
@@ -623,4 +635,170 @@ model CompetitiveExamMark {
 
   @@unique([competitiveExamId, studentId])
   @@map("competitive_exam_marks")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5: Communication (Section 6.9)
+// ---------------------------------------------------------------------------
+
+model Homework {
+  id              String   @id @default(cuid())
+  sectionId       String
+  subjectId       String
+  description     String
+  dueDate         DateTime @db.Date
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  section     Section              @relation(fields: [sectionId], references: [id])
+  subject     Subject              @relation(fields: [subjectId], references: [id])
+  attachments HomeworkAttachment[]
+  submissions HomeworkSubmission[]
+
+  @@index([sectionId])
+  @@map("homework")
+}
+
+model HomeworkAttachment {
+  id         String   @id @default(cuid())
+  homeworkId String
+  url        String
+  fileName   String
+  createdAt  DateTime @default(now())
+
+  homework Homework @relation(fields: [homeworkId], references: [id])
+
+  @@map("homework_attachments")
+}
+
+enum HomeworkSubmissionStatus {
+  SUBMITTED
+  LATE
+}
+
+model HomeworkSubmission {
+  id            String                   @id @default(cuid())
+  homeworkId    String
+  studentId     String
+  submittedAt   DateTime                 @default(now())
+  attachmentUrl String?
+  remarks       String?
+  status        HomeworkSubmissionStatus @default(SUBMITTED)
+
+  homework Homework @relation(fields: [homeworkId], references: [id])
+  student  Student  @relation(fields: [studentId], references: [id])
+
+  @@unique([homeworkId, studentId])
+  @@map("homework_submissions")
+}
+
+enum NotificationTarget {
+  ALL
+  SECTION
+  STUDENT
+}
+
+model Notification {
+  id              String             @id @default(cuid())
+  branchId        String
+  title           String
+  body            String
+  targetType      NotificationTarget
+  sectionId       String?
+  studentId       String?
+  createdByUserId String?
+  createdAt       DateTime           @default(now())
+
+  branch  Branch   @relation(fields: [branchId], references: [id])
+  section Section? @relation(fields: [sectionId], references: [id])
+  student Student? @relation(fields: [studentId], references: [id])
+
+  @@index([branchId])
+  @@index([sectionId])
+  @@index([studentId])
+  @@map("notifications")
+}
+
+model Circular {
+  id              String   @id @default(cuid())
+  branchId        String
+  title           String
+  body            String
+  sectionId       String?
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  branch  Branch   @relation(fields: [branchId], references: [id])
+  section Section? @relation(fields: [sectionId], references: [id])
+
+  @@index([branchId])
+  @@index([sectionId])
+  @@map("circulars")
+}
+
+model GalleryAlbum {
+  id        String   @id @default(cuid())
+  branchId  String
+  title     String
+  createdAt DateTime @default(now())
+
+  branch Branch        @relation(fields: [branchId], references: [id])
+  items  GalleryItem[]
+
+  @@index([branchId])
+  @@map("gallery_albums")
+}
+
+model GalleryItem {
+  id        String   @id @default(cuid())
+  albumId   String
+  imageUrl  String
+  caption   String?
+  createdAt DateTime @default(now())
+
+  album GalleryAlbum @relation(fields: [albumId], references: [id])
+
+  @@index([albumId])
+  @@map("gallery_items")
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  branchId    String
+  title       String
+  videoUrl    String
+  description String?
+  createdAt   DateTime @default(now())
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+  @@map("videos")
+}
+
+// One thread per student, shared by all guardians and any staff who message in.
+model ChatThread {
+  id        String   @id @default(cuid())
+  studentId String   @unique
+  createdAt DateTime @default(now())
+
+  student  Student       @relation(fields: [studentId], references: [id])
+  messages ChatMessage[]
+
+  @@map("chat_threads")
+}
+
+model ChatMessage {
+  id           String   @id @default(cuid())
+  threadId     String
+  senderUserId String
+  body         String
+  createdAt    DateTime @default(now())
+
+  thread ChatThread @relation(fields: [threadId], references: [id])
+  sender User       @relation(fields: [senderUserId], references: [id])
+
+  @@index([threadId])
+  @@map("chat_messages")
 }

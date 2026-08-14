@@ -7,6 +7,12 @@ import {
   CalendarClock,
   NotebookPen,
   PenLine,
+  BookOpen,
+  Bell,
+  Megaphone,
+  Image as ImageIcon,
+  Video,
+  MessageCircle,
 } from "lucide-react";
 import { requireRole } from "@/lib/rbac/permissions";
 import { getSession } from "@/lib/auth/session";
@@ -31,6 +37,17 @@ export default async function TeacherLayout({ children }: { children: React.Reac
         { label: "Schedule / Calendar", href: "/teacher/schedule", icon: <CalendarClock aria-hidden="true" className="size-4" /> },
         { label: "Monthly Lesson Plans", href: "/teacher/lesson-plans", icon: <NotebookPen aria-hidden="true" className="size-4" /> },
         { label: "Marks Entry", href: "/teacher/exams/marks-entry", icon: <PenLine aria-hidden="true" className="size-4" /> },
+      ],
+    },
+    {
+      title: "Communication",
+      items: [
+        { label: "Homework", href: "/teacher/homework", icon: <BookOpen aria-hidden="true" className="size-4" /> },
+        { label: "Notifications", href: "/teacher/notifications", icon: <Bell aria-hidden="true" className="size-4" /> },
+        { label: "Circulars", href: "/teacher/circulars", icon: <Megaphone aria-hidden="true" className="size-4" /> },
+        { label: "Gallery", href: "/teacher/gallery", icon: <ImageIcon aria-hidden="true" className="size-4" /> },
+        { label: "Videos", href: "/teacher/videos", icon: <Video aria-hidden="true" className="size-4" /> },
+        { label: "Chat", href: "/teacher/chat", icon: <MessageCircle aria-hidden="true" className="size-4" /> },
       ],
     },
     {
