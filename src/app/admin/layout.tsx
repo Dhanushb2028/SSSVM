@@ -19,6 +19,9 @@ import {
   FileCheck2,
   Cake,
   GalleryHorizontal,
+  ClipboardCheck,
+  ClipboardList,
+  CalendarDays,
 } from "lucide-react";
 import { requireRole, hasPermission } from "@/lib/rbac/permissions";
 import { getSession } from "@/lib/auth/session";
@@ -79,6 +82,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { label: "App Home Banners", href: "/admin/sis/banners", icon: icon(GalleryHorizontal), module: "sis.app_banners" },
   ]);
   if (sis) navSections.push(sis);
+
+  const attendance = buildSection(session, "Attendance", [
+    { label: "Mark Attendance", href: "/admin/attendance/mark", icon: icon(ClipboardCheck), module: "attendance.mark" },
+    { label: "Absentee Report", href: "/admin/attendance/reports", icon: icon(ClipboardList), module: "attendance.reports" },
+  ]);
+  if (attendance) navSections.push(attendance);
+
+  const academics = buildSection(session, "Academics", [
+    { label: "Timetable", href: "/admin/academics/timetable", icon: icon(CalendarDays), module: "academics.timetable" },
+  ]);
+  if (academics) navSections.push(academics);
 
   navSections.push({
     title: "Account",

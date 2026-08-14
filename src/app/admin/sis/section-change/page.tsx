@@ -1,8 +1,8 @@
 import { requirePermissionOrRedirect } from "@/lib/rbac/permissions";
 import { db } from "@/lib/db";
 import { changeStudentSectionAction } from "@/server/actions/promote-actions";
-import { SectionPickerSelect } from "../_shared/section-picker-select";
-import { BulkMoverForm } from "../_shared/bulk-mover-form";
+import { SectionPickerSelect } from "@/components/shared/section-picker-select";
+import { BulkMoverForm } from "@/components/shared/bulk-mover-form";
 
 export default async function SectionChangePage({
   searchParams,

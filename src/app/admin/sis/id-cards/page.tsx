@@ -1,6 +1,6 @@
 import { requirePermissionOrRedirect } from "@/lib/rbac/permissions";
 import { db } from "@/lib/db";
-import { SectionPickerSelect } from "../_shared/section-picker-select";
+import { SectionPickerSelect } from "@/components/shared/section-picker-select";
 import { IdCardSelector } from "./id-card-selector";
 
 export default async function IdCardsPage({

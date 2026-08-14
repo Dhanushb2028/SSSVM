@@ -15,11 +15,12 @@ export function StatusBadge({
   tone,
   children,
   className,
+  ...props
 }: {
   tone: keyof typeof TONES;
   children: React.ReactNode;
   className?: string;
-}) {
+} & React.HTMLAttributes<HTMLSpanElement>) {
   const { className: toneClassName, Icon } = TONES[tone];
   return (
     <span
@@ -28,6 +29,7 @@ export function StatusBadge({
         toneClassName,
         className,
       )}
+      {...props}
     >
       <Icon aria-hidden="true" className="size-3.5" />
       {children}

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { PrismaClient } from "@prisma/client";
-import { assertOwnStudent, assertBranchAccess } from "@/lib/rbac/scope";
+import { assertOwnStudent, assertBranchAccess, requireSectionActionAccess } from "@/lib/rbac/scope";
 import { ForbiddenError } from "@/lib/rbac/errors";
 import type { AppSession } from "@/lib/auth/session";
 
@@ -125,5 +125,67 @@ describe("RBAC data isolation (Section 9)", () => {
     const session = sessionFor({ role: "ADMIN", branchId: null, isSuperAdmin: true });
     expect(() => assertBranchAccess(session, branchAId)).not.toThrow();
     expect(() => assertBranchAccess(session, branchBId)).not.toThrow();
+  });
+});
+
+describe("requireSectionActionAccess (Section 4: Teacher access is row-scoped, not module-permission-scoped)", () => {
+  let orgId: string;
+  let branchId: string;
+  let yearId: string;
+  let courseId: string;
+  let ownSectionId: string;
+  let otherSectionId: string;
+  let staffId: string;
+
+  beforeAll(async () => {
+    const org = await db.organization.create({ data: { name: `Section Access Test Org ${Date.now()}` } });
+    orgId = org.id;
+    const branch = await db.branch.create({ data: { organizationId: orgId, name: "Main" } });
+    branchId = branch.id;
+    const year = await db.academicYear.create({
+      data: { branchId, name: `Year ${Date.now()}`, startDate: new Date("2025-06-01"), endDate: new Date("2026-04-30") },
+    });
+    yearId = year.id;
+    const course = await db.course.create({ data: { organizationId: orgId, name: `Grade ${Date.now()}` } });
+    courseId = course.id;
+
+    const staff = await db.staffMember.create({
+      data: { branchId, employeeCode: `T-${Date.now()}`, firstName: "Teach", lastName: "Er", designation: "Teacher", phone: "9000000099" },
+    });
+    staffId = staff.id;
+
+    const ownSection = await db.section.create({
+      data: { academicYearId: yearId, branchId, courseId, name: "OwnA", classTeacherId: staffId },
+    });
+    ownSectionId = ownSection.id;
+    const otherSection = await db.section.create({
+      data: { academicYearId: yearId, branchId, courseId, name: "OtherB" },
+    });
+    otherSectionId = otherSection.id;
+  });
+
+  afterAll(async () => {
+    await db.section.deleteMany({ where: { id: { in: [ownSectionId, otherSectionId] } } });
+    await db.staffMember.delete({ where: { id: staffId } });
+    await db.academicYear.delete({ where: { id: yearId } });
+    await db.course.delete({ where: { id: courseId } });
+    await db.branch.delete({ where: { id: branchId } });
+    await db.organization.delete({ where: { id: orgId } });
+    await db.$disconnect();
+  });
+
+  it("lets a teacher act on a section they're the class teacher of", async () => {
+    const session = sessionFor({ role: "TEACHER", staffMemberId: staffId });
+    await expect(requireSectionActionAccess(session, ownSectionId, "attendance.mark")).resolves.toBeUndefined();
+  });
+
+  it("blocks a teacher from acting on a section they don't teach, by ID manipulation", async () => {
+    const session = sessionFor({ role: "TEACHER", staffMemberId: staffId });
+    await expect(requireSectionActionAccess(session, otherSectionId, "attendance.mark")).rejects.toThrow(ForbiddenError);
+  });
+
+  it("blocks a student/parent from this action entirely, even with no sectionId tampering", async () => {
+    const session = sessionFor({ role: "STUDENT" });
+    await expect(requireSectionActionAccess(session, ownSectionId, "attendance.mark")).rejects.toThrow(ForbiddenError);
   });
 });

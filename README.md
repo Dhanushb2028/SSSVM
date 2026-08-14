@@ -2,9 +2,9 @@
 
 A PowerSchool-style school management system for **Sree Siva Shankar Vidya Mandir** (K.R.M. Colony) — four portals (Admin, Teacher, Student, Parent) on one Next.js app, one PostgreSQL database, and one Prisma schema. See `ARCHITECTURE.md` for the full stack rationale and design decisions.
 
-## Status: Phase 2 of 10 (Student Information System core)
+## Status: Phase 3 of 10 (Attendance & Timetable)
 
-This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–2 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, and the full Student Information System core (student master data, bulk upload, promote, section change, trash, ID cards, certificate permission, birthday list, app banners). Phases 3–10 (Attendance/Timetable, Exams, Communication, Finance, Admissions/Certificates, HR/Transport/Hostel, the Student/Parent portals' full feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
+This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–3 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, and Attendance + Timetable for Admin and Teacher. Phases 4–10 (Exams, Communication, Finance, Admissions/Certificates, HR/Transport/Hostel, the Student/Parent portals' full feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
 
 ## Running locally
 
@@ -65,6 +65,13 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **App Home Banners**: image CRUD for the Student/Parent portal home feed, served through a small local-storage route handler (`/uploads/[...path]`) that stands in for the swappable `StorageProvider`.
 - **Admin dashboard**: now includes active-student/section counts and an enrollment-by-course bar chart built on the shared `<ChartContainer>`.
 
+## What's built (Phase 3 adds)
+
+- **Attendance**: classwise bulk-mark flow (per-student radio group defaulting to Present, absentee sub-list updates immediately on save, no page reload needed), markable for any past or future date, shared between the Admin and Teacher portals. An Admin-only Absentee Report filters by multi-section + date range with CSV export.
+- **Timetable**: a Monday–Saturday × 8-period grid per section; click a cell to set its subject/teacher or clear it. Shared between Admin and Teacher.
+- **New dual-role authorization pattern**: `requireSectionActionAccess()` in `lib/rbac/scope.ts` — the first RBAC helper usable by both Admin (module-permission-scoped) and Teacher (row-scoped: only sections they're the class teacher of) on the *same* mutation. Everywhere else, `requirePermission()` (Admin-only) and row-scope helpers stayed separate; attendance/timetable needed both at once, so this composes them rather than special-casing role checks inline in every action.
+- **Teacher dashboard** now shows today's per-section attendance status (marked/not marked) with a one-click link into the mark-attendance flow for anything still outstanding.
+
 ## What's built (Phase 1)
 
 - **Auth**: custom database-backed sessions (bcrypt hashing, httpOnly cookies, in-memory login rate limiting, instant force-logout on account deactivation/password reset).
@@ -86,6 +93,8 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **ID Cards ship with one built-in template** rather than a template-management screen — the spec's "choose a card template/layout" is satisfied minimally; a template editor is a v2 follow-up if the school needs more than one layout.
 - **Outgoing Students' "outstanding dues" column is a visible placeholder**, not a fabricated number — real figures need `FeeTransaction` data from Phase 6.
 - **`Student.leftDate`/`leftReason` were added** (beyond the Section 5 minimum) because the Outgoing Students report needs them to be meaningful; a bare `status = LEFT` with no timestamp wasn't enough to build a real report against.
+- **"A teacher's section" means class-teacher-of, for now.** There's no separate per-subject teaching-assignment model yet, so Attendance/Timetable scope a Teacher to sections where `Section.classTeacherId` matches them. A subject-teacher (who isn't a class teacher) can't yet mark attendance or edit a timetable for a section they only teach one subject in — revisit if/when a `TeachingAssignment` model is introduced for marks entry in Phase 4.
+- **Attendance is one status per student per calendar day**, not per period — matches how the spec describes daily attendance marking (6.6) rather than per-period attendance.
 
 ## Open follow-ups for v2 (beyond later-phase feature work)
 
