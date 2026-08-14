@@ -1,0 +1,363 @@
+// SSSVM School Management System — Prisma schema
+// Phase 1: core organizational hierarchy, people, auth, and RBAC.
+// Later phases add academics/finance/comms/etc. tables via new migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Organizational hierarchy
+// ---------------------------------------------------------------------------
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  branches Branch[]
+  courses  Course[]
+  subjects Subject[]
+
+  @@map("organizations")
+}
+
+model Branch {
+  id             String  @id @default(cuid())
+  organizationId String
+  name           String
+  city           String?
+  address        String?
+  phone          String?
+  isHostel       Boolean @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization  Organization   @relation(fields: [organizationId], references: [id])
+  academicYears AcademicYear[]
+  sections      Section[]
+  students      Student[]
+  staffMembers  StaffMember[]
+  users         User[]
+
+  @@index([organizationId])
+  @@map("branches")
+}
+
+model AcademicYear {
+  id        String   @id @default(cuid())
+  branchId  String
+  name      String // e.g. "2025-2026"
+  startDate DateTime
+  endDate   DateTime
+  isCurrent Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch   Branch    @relation(fields: [branchId], references: [id])
+  sections Section[]
+
+  @@unique([branchId, name])
+  @@index([branchId])
+  @@map("academic_years")
+}
+
+model Course {
+  id             String  @id @default(cuid())
+  organizationId String
+  name           String // e.g. "Grade 5"
+  orderIndex     Int     @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  sections     Section[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("courses")
+}
+
+model Subject {
+  id             String  @id @default(cuid())
+  organizationId String
+  name           String
+  code           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("subjects")
+}
+
+// A Section is a year-specific mapping of a Course to a Branch, e.g. "5-A" for 2025-2026.
+model Section {
+  id             String  @id @default(cuid())
+  academicYearId String
+  branchId       String
+  courseId       String
+  name           String // e.g. "A"
+  capacity       Int?
+  classTeacherId String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
+  course       Course       @relation(fields: [courseId], references: [id])
+  classTeacher StaffMember? @relation("SectionClassTeacher", fields: [classTeacherId], references: [id])
+  students     Student[]
+
+  @@unique([academicYearId, branchId, courseId, name])
+  @@index([academicYearId])
+  @@index([branchId])
+  @@index([courseId])
+  @@map("sections")
+}
+
+// ---------------------------------------------------------------------------
+// People
+// ---------------------------------------------------------------------------
+
+enum StudentStatus {
+  ACTIVE
+  PROMOTED
+  LEFT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model Student {
+  id              String        @id @default(cuid())
+  admissionNumber String        @unique
+  branchId        String
+  sectionId       String?
+  firstName       String
+  lastName        String
+  dob             DateTime
+  gender          Gender
+  photoUrl        String?
+  bloodGroup      String?
+  address         String?
+  contactPhone    String?
+  contactEmail    String?
+  admissionDate   DateTime      @default(now())
+  status          StudentStatus @default(ACTIVE)
+  tcEligible      Boolean       @default(false)
+  tcIssued        Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  branch    Branch            @relation(fields: [branchId], references: [id])
+  section   Section?          @relation(fields: [sectionId], references: [id])
+  guardians StudentGuardian[]
+  user      User?
+
+  @@index([branchId])
+  @@index([sectionId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("students")
+}
+
+model Guardian {
+  id           String   @id @default(cuid())
+  firstName    String
+  lastName     String
+  phone        String   @unique
+  email        String?
+  address      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  students StudentGuardian[]
+  user     User?
+
+  @@index([deletedAt])
+  @@map("guardians")
+}
+
+enum GuardianRelationship {
+  FATHER
+  MOTHER
+  GUARDIAN
+  OTHER
+}
+
+model StudentGuardian {
+  id           String               @id @default(cuid())
+  studentId    String
+  guardianId   String
+  relationship GuardianRelationship
+  isPrimary    Boolean              @default(false)
+  createdAt    DateTime             @default(now())
+
+  student  Student  @relation(fields: [studentId], references: [id])
+  guardian Guardian @relation(fields: [guardianId], references: [id])
+
+  @@unique([studentId, guardianId])
+  @@index([studentId])
+  @@index([guardianId])
+  @@map("student_guardians")
+}
+
+model StaffMember {
+  id            String   @id @default(cuid())
+  branchId      String
+  employeeCode  String   @unique
+  firstName     String
+  lastName      String
+  designation   String
+  phone         String
+  email         String?
+  address       String?
+  joinDate      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  branch           Branch    @relation(fields: [branchId], references: [id])
+  user             User?
+  classesAsTeacher Section[] @relation("SectionClassTeacher")
+
+  @@index([branchId])
+  @@index([deletedAt])
+  @@map("staff_members")
+}
+
+// ---------------------------------------------------------------------------
+// Auth & RBAC
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+enum PermissionAction {
+  VIEW
+  CREATE
+  EDIT
+  DELETE
+  EXPORT
+}
+
+// Named permission sets assignable to ADMIN-role users to scope them to a subset
+// of admin modules (e.g. "Front Office", "Finance Staff") without a new top-level role.
+model PermissionProfile {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  grants PermissionGrant[]
+  users  User[]
+
+  @@map("permission_profiles")
+}
+
+// One row per (profile, module, action) grant, e.g. ("Finance Staff", "finance.fees", VIEW).
+model PermissionGrant {
+  id                  String            @id @default(cuid())
+  permissionProfileId String
+  module              String
+  action              PermissionAction
+
+  permissionProfile PermissionProfile @relation(fields: [permissionProfileId], references: [id])
+
+  @@unique([permissionProfileId, module, action])
+  @@index([permissionProfileId])
+  @@map("permission_grants")
+}
+
+model User {
+  id                  String    @id @default(cuid())
+  role                Role
+  username            String?   @unique // ADMIN / TEACHER login identifier
+  mobile              String?   @unique // STUDENT / PARENT login identifier
+  // Standalone admin accounts (no linked StaffMember/Student/Guardian) store their
+  // own name/email here; linked accounts source these from the linked person record.
+  name                String?
+  email               String?   @unique
+  passwordHash        String
+  isActive            Boolean   @default(true)
+  // Restricts an ADMIN-role user to one branch; null means org-wide (all branches) access.
+  branchId            String?
+  permissionProfileId String?
+  studentId           String?   @unique
+  guardianId          String?   @unique
+  staffMemberId       String?   @unique
+  lastLoginAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  branch            Branch?            @relation(fields: [branchId], references: [id])
+  permissionProfile PermissionProfile? @relation(fields: [permissionProfileId], references: [id])
+  student           Student?           @relation(fields: [studentId], references: [id])
+  guardian          Guardian?          @relation(fields: [guardianId], references: [id])
+  staffMember       StaffMember?       @relation(fields: [staffMemberId], references: [id])
+
+  sessions  Session[]
+  auditLogs AuditLog[]
+
+  @@index([role])
+  @@index([branchId])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  tokenHash    String   @unique
+  expiresAt    DateTime
+  userAgent    String?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// Required for all destructive/financial actions per Section 9: fee cancellations,
+// bank transaction cancellations, bulk promotions, certificate-eligibility changes, bulk SMS.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String // e.g. "fee_receipt.cancel", "student.bulk_promote"
+  entityType String // e.g. "FeeTransaction"
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
