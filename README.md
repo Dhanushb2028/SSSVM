@@ -2,9 +2,9 @@
 
 A PowerSchool-style school management system for **Sree Siva Shankar Vidya Mandir** (K.R.M. Colony) — four portals (Admin, Teacher, Student, Parent) on one Next.js app, one PostgreSQL database, and one Prisma schema. See `ARCHITECTURE.md` for the full stack rationale and design decisions.
 
-## Status: Phase 1 of 10 (Foundation)
+## Status: Phase 2 of 10 (Student Information System core)
 
-This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phase 1 is complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup (Academic Years / Organizations / Branches), and Users & Roles (accounts + permission profiles). Phases 2–10 (Student Information System, Attendance, Exams, Communication, Finance, Admissions, HR/Transport/Hostel, the Student/Parent portals' full feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
+This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–2 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, and the full Student Information System core (student master data, bulk upload, promote, section change, trash, ID cards, certificate permission, birthday list, app banners). Phases 3–10 (Attendance/Timetable, Exams, Communication, Finance, Admissions/Certificates, HR/Transport/Hostel, the Student/Parent portals' full feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
 
 ## Running locally
 
@@ -50,6 +50,21 @@ npm test          # unit + integration tests (Vitest), requires Postgres running
 
 Covers: RBAC permission logic, password hashing, table-parameter parsing (unit), and — per the spec's explicit security requirement — an integration test asserting a parent/student cannot fetch another family's student record by ID manipulation, and that a branch-scoped admin cannot act on another branch's data.
 
+## What's built (Phase 2 adds)
+
+- **Sections**: CRUD mapping a course to a branch/academic year, with an optional class teacher and capacity.
+- **Student Master**: search/filter by course/section, full profile view + edit, photo upload, guardian linking (search-by-phone-or-create), mark-as-left.
+- **Bulk Upload**: CSV import with a downloadable template; every row is validated before any write, rejected rows are reported with a reason, accepted rows are still created.
+- **Promote** and **Section Change**: pick a source section, review/deselect the roster, pick a target section, confirm — both write an `AuditLog` entry with the affected student IDs.
+- **Strength / Abstract reports**: section-wise and course-wise headcount summaries, exportable.
+- **Outgoing Students**: students marked "left"; outstanding-dues column is a placeholder until Finance (Phase 6) ships.
+- **Trash**: soft-deleted students with one-click restore.
+- **ID Cards**: select a section's roster, generate a print-ready card layout (browser print, `@media print` hides app chrome).
+- **Certificate Permission**: bulk-toggle `tcEligible` ahead of Transfer Certificate issuance (Phase 7).
+- **Birthday List**: today's birthdays (computed in Postgres via `CURRENT_DATE`, not app-server time, to avoid timezone drift) with a stubbed "Send Wishes" SMS action.
+- **App Home Banners**: image CRUD for the Student/Parent portal home feed, served through a small local-storage route handler (`/uploads/[...path]`) that stands in for the swappable `StorageProvider`.
+- **Admin dashboard**: now includes active-student/section counts and an enrollment-by-course bar chart built on the shared `<ChartContainer>`.
+
 ## What's built (Phase 1)
 
 - **Auth**: custom database-backed sessions (bcrypt hashing, httpOnly cookies, in-memory login rate limiting, instant force-logout on account deactivation/password reset).
@@ -68,6 +83,9 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **Branch isolation**: an Admin `User` has an optional `branchId`; `null` means org-wide (multi-branch) access, matching the spec's multi-branch requirement from day one even though the seed data has a single branch.
 - **No real crest/logo image assets were supplied**, so the PWA icon and login-page mark are a placeholder "SS" monogram in the brand palette (royal blue / gold). Swap `public/icon.svg` and the mark in `src/app/login/page.tsx` for the real crest when available.
 - **Migrations in this sandboxed dev environment**: `prisma migrate dev` refuses to run non-interactively once a migration needs a confirmation prompt. See the workaround documented in `ARCHITECTURE.md` §7 — it produces an identical, real migration file, just via non-interactive steps. Unaffected in a normal terminal.
+- **ID Cards ship with one built-in template** rather than a template-management screen — the spec's "choose a card template/layout" is satisfied minimally; a template editor is a v2 follow-up if the school needs more than one layout.
+- **Outgoing Students' "outstanding dues" column is a visible placeholder**, not a fabricated number — real figures need `FeeTransaction` data from Phase 6.
+- **`Student.leftDate`/`leftReason` were added** (beyond the Section 5 minimum) because the Outgoing Students report needs them to be meaningful; a bare `status = LEFT` with no timestamp wasn't enough to build a real report against.
 
 ## Open follow-ups for v2 (beyond later-phase feature work)
 

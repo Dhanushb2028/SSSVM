@@ -47,6 +47,7 @@ model Branch {
   students      Student[]
   staffMembers  StaffMember[]
   users         User[]
+  appBanners    AppBanner[]
 
   @@index([organizationId])
   @@map("branches")
@@ -161,6 +162,8 @@ model Student {
   contactEmail    String?
   admissionDate   DateTime      @default(now())
   status          StudentStatus @default(ACTIVE)
+  leftDate        DateTime?
+  leftReason      String?
   tcEligible      Boolean       @default(false)
   tcIssued        Boolean       @default(false)
   createdAt       DateTime      @default(now())
@@ -360,4 +363,25 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2: Student home-screen banners (Section 6.4 "App home banners")
+// ---------------------------------------------------------------------------
+
+model AppBanner {
+  id         String   @id @default(cuid())
+  branchId   String
+  title      String?
+  imageUrl   String
+  linkUrl    String?
+  orderIndex Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+  @@map("app_banners")
 }

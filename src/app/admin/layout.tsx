@@ -1,69 +1,88 @@
-import { LayoutDashboard, CalendarRange, Building2, Landmark, Users, ShieldCheck, UserCircle } from "lucide-react";
-import { requireRole } from "@/lib/rbac/permissions";
-import { hasPermission } from "@/lib/rbac/permissions";
+import type { ReactNode } from "react";
+import {
+  LayoutDashboard,
+  CalendarRange,
+  Building2,
+  Landmark,
+  Users,
+  ShieldCheck,
+  UserCircle,
+  LayoutGrid,
+  GraduationCap,
+  Upload,
+  ArrowUpCircle,
+  ArrowLeftRight,
+  BarChart3,
+  LogOut,
+  Trash2,
+  IdCard,
+  FileCheck2,
+  Cake,
+  GalleryHorizontal,
+} from "lucide-react";
+import { requireRole, hasPermission } from "@/lib/rbac/permissions";
 import { getSession } from "@/lib/auth/session";
+import type { ModuleKey } from "@/lib/rbac/modules";
 import { DesktopShell, type NavSection } from "@/components/nav/desktop-shell";
 import { LogoutForm } from "@/components/nav/logout-form";
+import type { AppSession } from "@/lib/auth/session";
+
+type NavItemDef = { label: string; href: string; icon: ReactNode; module: ModuleKey };
+
+function buildSection(session: AppSession | null, title: string, items: NavItemDef[]): NavSection | null {
+  const visible = items.filter((item) => hasPermission(session, item.module, "VIEW"));
+  if (visible.length === 0) return null;
+  return { title, items: visible.map(({ label, href, icon }) => ({ label, href, icon })) };
+}
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireRole("ADMIN");
   const session = await getSession();
+  const icon = (Icon: typeof LayoutDashboard) => <Icon aria-hidden="true" className="size-4" />;
 
   const navSections: NavSection[] = [
     {
       title: "Overview",
-      items: [{ label: "Dashboard", href: "/admin/dashboard", icon: <LayoutDashboard aria-hidden="true" className="size-4" /> }],
+      items: [{ label: "Dashboard", href: "/admin/dashboard", icon: icon(LayoutDashboard) }],
     },
   ];
 
-  const systemSetupItems = [];
-  if (hasPermission(session, "system.academic_years", "VIEW")) {
-    systemSetupItems.push({
-      label: "Academic Years",
-      href: "/admin/system-setup/academic-years",
-      icon: <CalendarRange aria-hidden="true" className="size-4" />,
-    });
-  }
-  if (hasPermission(session, "system.organizations", "VIEW")) {
-    systemSetupItems.push({
-      label: "Organizations",
-      href: "/admin/system-setup/organizations",
-      icon: <Landmark aria-hidden="true" className="size-4" />,
-    });
-  }
-  if (hasPermission(session, "system.branches", "VIEW")) {
-    systemSetupItems.push({
-      label: "Branches",
-      href: "/admin/system-setup/branches",
-      icon: <Building2 aria-hidden="true" className="size-4" />,
-    });
-  }
-  if (systemSetupItems.length > 0) {
-    navSections.push({ title: "System Setup", items: systemSetupItems });
-  }
+  const systemSetup = buildSection(session, "System Setup", [
+    { label: "Academic Years", href: "/admin/system-setup/academic-years", icon: icon(CalendarRange), module: "system.academic_years" },
+    { label: "Organizations", href: "/admin/system-setup/organizations", icon: icon(Landmark), module: "system.organizations" },
+    { label: "Branches", href: "/admin/system-setup/branches", icon: icon(Building2), module: "system.branches" },
+  ]);
+  if (systemSetup) navSections.push(systemSetup);
 
-  const usersItems = [];
-  if (hasPermission(session, "users.accounts", "VIEW")) {
-    usersItems.push({
-      label: "User Accounts",
-      href: "/admin/users/accounts",
-      icon: <Users aria-hidden="true" className="size-4" />,
-    });
-  }
-  if (hasPermission(session, "users.roles", "VIEW")) {
-    usersItems.push({
-      label: "Roles & Permissions",
-      href: "/admin/users/roles",
-      icon: <ShieldCheck aria-hidden="true" className="size-4" />,
-    });
-  }
-  if (usersItems.length > 0) {
-    navSections.push({ title: "Users & Roles", items: usersItems });
-  }
+  const usersRoles = buildSection(session, "Users & Roles", [
+    { label: "User Accounts", href: "/admin/users/accounts", icon: icon(Users), module: "users.accounts" },
+    { label: "Roles & Permissions", href: "/admin/users/roles", icon: icon(ShieldCheck), module: "users.roles" },
+  ]);
+  if (usersRoles) navSections.push(usersRoles);
+
+  const sections = buildSection(session, "Sections", [
+    { label: "Sections", href: "/admin/sections", icon: icon(LayoutGrid), module: "sections.manage" },
+  ]);
+  if (sections) navSections.push(sections);
+
+  const sis = buildSection(session, "Student Information", [
+    { label: "Student Master", href: "/admin/sis/students", icon: icon(GraduationCap), module: "sis.students" },
+    { label: "Bulk Upload", href: "/admin/sis/bulk-upload", icon: icon(Upload), module: "sis.bulk_upload" },
+    { label: "Promote", href: "/admin/sis/promote", icon: icon(ArrowUpCircle), module: "sis.promote" },
+    { label: "Section Change", href: "/admin/sis/section-change", icon: icon(ArrowLeftRight), module: "sis.section_change" },
+    { label: "Strength / Abstract", href: "/admin/sis/reports", icon: icon(BarChart3), module: "sis.reports" },
+    { label: "Outgoing Students", href: "/admin/sis/outgoing", icon: icon(LogOut), module: "sis.outgoing" },
+    { label: "Trash", href: "/admin/sis/trash", icon: icon(Trash2), module: "sis.trash" },
+    { label: "ID Cards", href: "/admin/sis/id-cards", icon: icon(IdCard), module: "sis.id_cards" },
+    { label: "Certificate Permission", href: "/admin/sis/certificate-permission", icon: icon(FileCheck2), module: "sis.certificate_permission" },
+    { label: "Birthday List", href: "/admin/sis/birthdays", icon: icon(Cake), module: "sis.birthdays" },
+    { label: "App Home Banners", href: "/admin/sis/banners", icon: icon(GalleryHorizontal), module: "sis.app_banners" },
+  ]);
+  if (sis) navSections.push(sis);
 
   navSections.push({
     title: "Account",
-    items: [{ label: "Profile", href: "/admin/profile", icon: <UserCircle aria-hidden="true" className="size-4" /> }],
+    items: [{ label: "Profile", href: "/admin/profile", icon: icon(UserCircle) }],
   });
 
   return (
