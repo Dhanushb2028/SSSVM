@@ -45,6 +45,10 @@ import {
   BookText,
   Landmark as BankIcon,
   FileSpreadsheet,
+  UserSearch,
+  Kanban,
+  FileText,
+  ClipboardType,
 } from "lucide-react";
 import { requireRole, hasPermission } from "@/lib/rbac/permissions";
 import { getSession } from "@/lib/auth/session";
@@ -153,6 +157,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { label: "Reports", href: "/admin/finance/reports", icon: icon(BarChart3), module: "finance.reports" },
   ]);
   if (finance) navSections.push(finance);
+
+  const admissions = buildSection(session, "Admissions", [
+    { label: "Enquiries", href: "/admin/admissions/enquiries", icon: icon(Kanban), module: "admissions.enquiries" },
+    { label: "Marketing Officers", href: "/admin/admissions/meo", icon: icon(UserSearch), module: "admissions.meo" },
+    { label: "Applications", href: "/admin/admissions/applications", icon: icon(FileText), module: "admissions.applications" },
+    { label: "Reports", href: "/admin/admissions/reports", icon: icon(BarChart3), module: "admissions.reports" },
+  ]);
+  if (admissions) navSections.push(admissions);
+
+  const certificates = buildSection(session, "Certificates", [
+    { label: "Transfer Certificates", href: "/admin/certificates", icon: icon(FileCheck2), module: "certificates.tc" },
+    { label: "Bulk Upload", href: "/admin/certificates/bulk-upload", icon: icon(ClipboardType), module: "certificates.tc" },
+  ]);
+  if (certificates) navSections.push(certificates);
 
   navSections.push({
     title: "Account",

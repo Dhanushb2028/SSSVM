@@ -44,23 +44,25 @@ model Branch {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization     Organization      @relation(fields: [organizationId], references: [id])
-  academicYears    AcademicYear[]
-  sections         Section[]
-  students         Student[]
-  staffMembers     StaffMember[]
-  users            User[]
-  appBanners       AppBanner[]
-  scheduleEvents   ScheduleEvent[]
-  exams            Exam[]
-  notifications    Notification[]
-  circulars        Circular[]
-  galleryAlbums    GalleryAlbum[]
-  videos           Video[]
-  feeStructures    FeeStructure[]
-  feeTransactions  FeeTransaction[]
-  expenses         Expense[]
-  bankTransactions BankTransaction[]
+  organization       Organization       @relation(fields: [organizationId], references: [id])
+  academicYears      AcademicYear[]
+  sections           Section[]
+  students           Student[]
+  staffMembers       StaffMember[]
+  users              User[]
+  appBanners         AppBanner[]
+  scheduleEvents     ScheduleEvent[]
+  exams              Exam[]
+  notifications      Notification[]
+  circulars          Circular[]
+  galleryAlbums      GalleryAlbum[]
+  videos             Video[]
+  feeStructures      FeeStructure[]
+  feeTransactions    FeeTransaction[]
+  expenses           Expense[]
+  bankTransactions   BankTransaction[]
+  marketingOfficers  MarketingOfficer[]
+  admissionEnquiries AdmissionEnquiry[]
 
   @@index([organizationId])
   @@map("branches")
@@ -96,9 +98,10 @@ model Course {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization  Organization   @relation(fields: [organizationId], references: [id])
-  sections      Section[]
-  feeStructures FeeStructure[]
+  organization       Organization       @relation(fields: [organizationId], references: [id])
+  sections           Section[]
+  feeStructures      FeeStructure[]
+  admissionEnquiries AdmissionEnquiry[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -195,6 +198,12 @@ model Student {
   leftReason      String?
   tcEligible      Boolean       @default(false)
   tcIssued        Boolean       @default(false)
+  tcNumber        String?
+  tcIssuedDate    DateTime?
+  fatherName      String?
+  motherName      String?
+  nationality     String?
+  category        String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
@@ -210,6 +219,7 @@ model Student {
   notifications        Notification[]
   chatThread           ChatThread?
   feeTransactions      FeeTransaction[]
+  convertedFromEnquiry AdmissionEnquiry?
 
   @@index([branchId])
   @@index([sectionId])
@@ -944,4 +954,66 @@ model BankTransaction {
   @@index([branchId])
   @@index([date])
   @@map("bank_transactions")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 7: Admissions CRM & Certificates (Section 6.3, 6.14)
+// ---------------------------------------------------------------------------
+
+model MarketingOfficer {
+  id        String    @id @default(cuid())
+  branchId  String
+  firstName String
+  lastName  String
+  phone     String
+  email     String?
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  branch    Branch             @relation(fields: [branchId], references: [id])
+  enquiries AdmissionEnquiry[]
+
+  @@index([branchId])
+  @@map("marketing_officers")
+}
+
+// A single pipeline covers both the "enquiry" and "applications" stages the
+// spec describes separately (6.3) — NEW..APPLIED are enquiry-side, ADMITTED
+// is the one-click "convert to admission" outcome, LOST covers drop-off at
+// any stage. One model instead of two avoids duplicating the same funnel.
+enum EnquiryStatus {
+  NEW
+  CONTACTED
+  VISITED
+  APPLIED
+  ADMITTED
+  LOST
+}
+
+model AdmissionEnquiry {
+  id                 String        @id @default(cuid())
+  branchId           String
+  courseId           String?
+  studentName        String
+  parentName         String
+  phone              String
+  email              String?
+  source             String?
+  visitCount         Int           @default(0)
+  status             EnquiryStatus @default(NEW)
+  assignedMeoId      String?
+  feeCommitment      Float?
+  notes              String?
+  convertedStudentId String?       @unique
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  branch           Branch            @relation(fields: [branchId], references: [id])
+  course           Course?           @relation(fields: [courseId], references: [id])
+  assignedMeo      MarketingOfficer? @relation(fields: [assignedMeoId], references: [id])
+  convertedStudent Student?          @relation(fields: [convertedStudentId], references: [id])
+
+  @@index([branchId])
+  @@index([status])
+  @@map("admission_enquiries")
 }

@@ -2,9 +2,9 @@
 
 A PowerSchool-style school management system for **Sree Siva Shankar Vidya Mandir** (K.R.M. Colony) — four portals (Admin, Teacher, Student, Parent) on one Next.js app, one PostgreSQL database, and one Prisma schema. See `ARCHITECTURE.md` for the full stack rationale and design decisions.
 
-## Status: Phase 6 of 10 (Finance & Fees)
+## Status: Phase 7 of 10 (Admissions & Certificates)
 
-This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–6 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, Attendance + Timetable, Exams & Assessments, Syllabus/Schedule/Lesson Plans, the full Communication module across all four portals, and now Finance & Fees (fee structure, receipts/ledger, cancellation with audit, expenditure, banking, reports, and a read-only fee-status view for Student/Parent). Phases 7–10 (Admissions/Certificates, HR/Transport/Hostel, the rest of the Student/Parent portals' feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
+This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–7 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, Attendance + Timetable, Exams & Assessments, Syllabus/Schedule/Lesson Plans, the full Communication module across all four portals, Finance & Fees, and now Admissions & Certificates (enquiry CRM pipeline, MEO management, one-click convert-to-admission, admissions reporting, Transfer Certificate issuance with an eligibility guardrail, and CBSE-format bulk data upload). Phases 8–10 (HR/Transport/Hostel, the rest of the Student/Parent portals' feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
 
 ## Running locally
 
@@ -49,6 +49,17 @@ npm test          # unit + integration tests (Vitest), requires Postgres running
 ```
 
 Covers: RBAC permission logic, password hashing, table-parameter parsing (unit), and — per the spec's explicit security requirement — an integration test asserting a parent/student cannot fetch another family's student record by ID manipulation, and that a branch-scoped admin cannot act on another branch's data.
+
+## What's built (Phase 7 adds)
+
+- **Marketing/Enrollment Officers (MEO)**: simple staff-directory CRUD, one per branch, used to attribute enquiries and admissions to a specific officer for reporting.
+- **Enquiry CRM**: a kanban board (`NEW → CONTACTED → VISITED → APPLIED → ADMITTED`, plus a `LOST` side-state) with one-click stage advancement; moving a card to `VISITED` increments a `visitCount` counter on the enquiry automatically.
+- **Convert to Admission**: one action on an `APPLIED`/later-stage enquiry that validates a unique admission number and, in a single `db.$transaction`, creates a real `Student` record and marks the source enquiry `ADMITTED` with a `convertedStudentId` back-reference — no separate manual re-entry step.
+- **Applications**: the same enquiry board component, reused filtered to `APPLIED`+`ADMITTED` only, rather than a second parallel model/UI (see Deliberate scope decisions).
+- **Admissions Reports**: totals, fee-commitment sum, and staff/course breakdowns for admitted enquiries in a date range, with CSV export.
+- **Transfer Certificates**: an eligibility guardrail (`Student.tcEligible`, toggled in bulk from Phase 2's Certificate Permission screen) gates issuance both at the query level (ineligible students never appear on the TC dashboard) and the action level (a direct action call is still rejected server-side). Issued/not-issued are two separate routes to avoid two `<DataTable>` instances colliding over the same `page`/`sort`/`q` URL params on one page.
+- **CBSE Bulk Upload**: CSV backfill of father/mother name, nationality, and category onto existing students (matched by admission number) ahead of CBSE-format TC printing — updates only, never creates new students.
+- **Bug-sweep habit continued from Phase 6**: checked every new model introduced this phase for uniquely-constrained fields reachable from a "quick add" `.create()` call (the Phase 6 bug's shape). `MarketingOfficer` has no unique constraint (multiple officers can share a name), so no pre-existence check was needed there; `AdmissionEnquiry`'s only uniqueness (`convertedStudentId`) is set inside the `convertEnquiryAction` transaction after the admission-number uniqueness check already runs, so no unguarded path exists.
 
 ## What's built (Phase 2 adds)
 
@@ -132,6 +143,10 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **`FeeTransaction` holds one total amount per receipt**, not a per-fee-component line-item breakdown — matches Section 5's literal field list ("student, amount, date, mode, receipt number, cancelled flag + reason") rather than the more normalized design I used for `ExamMark`/`ExamSubject`; a receipt here is what it pays for in total, not itemized.
 - **Receipt numbers are generated by counting existing rows per branch**, not a DB sequence — correct at this school's transaction volume/concurrency, but two receipts created in the same instant on the same branch could theoretically race; a real production deployment would want a DB-level sequence or advisory lock.
 - **Finance module is Admin-only** (permission-profile-scoped, e.g. a "Finance Staff" role from Phase 1's seed) — unlike Attendance/Timetable/Exams/Communication, Finance has no Teacher-facing screens, matching how the spec frames Section 6.10 as an Admin/finance-staff module throughout.
+
+- **`AdmissionEnquiry` is one model with a status-pipeline enum, not two parallel "Enquiry" and "Application" models** as the spec's section headings might suggest. "Applications" is a filtered view (`APPLIED`+`ADMITTED`) of the same kanban board component as the full "Enquiries" pipeline — an application is just an enquiry that reached a later stage, not a distinct entity with its own lifecycle.
+- **Transfer Certificates are Admin-only** (permission-profile-scoped, e.g. the seeded "Front Office" role) — there's no teacher-facing TC screen, matching how the spec frames certificate issuance as a front-office/admin function throughout.
+- **CBSE Bulk Upload updates existing students only.** It's explicitly a backfill step ahead of TC printing (father/mother name, nationality, category weren't captured at admission time in earlier phases), not a general-purpose student importer — that's Phase 2's Bulk Upload, which does create new students.
 
 ## Open follow-ups for v2 (beyond later-phase feature work)
 
