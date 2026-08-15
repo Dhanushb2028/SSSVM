@@ -61,6 +61,9 @@ export async function deleteBranchAction(_prev: FormState, formData: FormData): 
     return { error: "Cannot delete: this branch still has sections, students, or academic years." };
   }
 
+  const existing = await db.branch.findUnique({ where: { id } });
+  if (!existing) return { error: "Branch not found." };
+
   await db.branch.update({ where: { id }, data: { deletedAt: new Date() } });
   await recordAudit({ actorId: session.userId, action: "branch.delete", entityType: "Branch", entityId: id });
   revalidatePath("/admin/system-setup/branches");

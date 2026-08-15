@@ -32,6 +32,9 @@ export async function deleteSalaryComponentAction(_prev: FormState, formData: Fo
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Missing id" };
 
+  const existing = await db.salaryComponent.findUnique({ where: { id } });
+  if (!existing) return { error: "Salary component not found." };
+
   await db.salaryComponent.update({ where: { id }, data: { deletedAt: new Date() } });
   await recordAudit({ actorId: session.userId, action: "salary_component.delete", entityType: "SalaryComponent", entityId: id });
   revalidatePath("/admin/hr/payroll");

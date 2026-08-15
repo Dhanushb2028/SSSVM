@@ -108,6 +108,11 @@ export async function convertEnquiryAction(_prev: FormState, formData: FormData)
   const dupAdmission = await db.student.findUnique({ where: { admissionNumber: parsed.data.admissionNumber } });
   if (dupAdmission) return { error: "That admission number is already in use." };
 
+  if (parsed.data.sectionId) {
+    const section = await db.section.findUnique({ where: { id: parsed.data.sectionId } });
+    if (!section || section.branchId !== enquiry.branchId) return { error: "That section does not belong to this enquiry's branch." };
+  }
+
   const [firstName, ...rest] = enquiry.studentName.trim().split(" ");
   const lastName = rest.join(" ") || firstName;
 

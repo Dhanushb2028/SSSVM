@@ -109,3 +109,5 @@ All four share one Next.js app, one Postgres database, one Prisma schema, and th
 ## 8. Build order
 
 Following Section 12 exactly, phase by phase, each ending in a demo-able increment against seeded data (a few orgs/branches/years, ~20-30 students, a couple of teachers, sample parents).
+
+All ten phases are complete. Phase 10 (hardening) was a review-and-fix pass rather than new features — see `README.md`'s "Phase 10: Hardening pass" section for what it covered and what it found.

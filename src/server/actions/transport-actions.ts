@@ -161,6 +161,11 @@ export async function assignStudentTransportAction(_prev: FormState, formData: F
   if (!student) return { error: "Student not found." };
   assertBranchAccess(session, student.branchId);
 
+  if (parsed.data.routeStopId) {
+    const stop = await db.routeStop.findUnique({ where: { id: parsed.data.routeStopId }, include: { route: true } });
+    if (!stop || stop.route.branchId !== student.branchId) return { error: "That route stop does not belong to this student's branch." };
+  }
+
   await db.student.update({ where: { id: parsed.data.studentId }, data: { routeStopId: parsed.data.routeStopId || null } });
   await recordAudit({ actorId: session.userId, action: "student.assign_transport", entityType: "Student", entityId: parsed.data.studentId });
   revalidatePath(`/admin/sis/students/${parsed.data.studentId}`);

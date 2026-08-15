@@ -28,6 +28,10 @@ export async function markStaffAttendanceAction(_prev: FormState, formData: Form
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   assertBranchAccess(session, parsed.data.branchId);
 
+  const staffIds = [...new Set(parsed.data.records.map((r) => r.staffMemberId))];
+  const staffCount = await db.staffMember.count({ where: { id: { in: staffIds }, branchId: parsed.data.branchId } });
+  if (staffCount !== staffIds.length) return { error: "One or more staff members do not belong to this branch." };
+
   const date = new Date(parsed.data.date);
   const actorId = (await getSession())!.userId;
   await db.$transaction(

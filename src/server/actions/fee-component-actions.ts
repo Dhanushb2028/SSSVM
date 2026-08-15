@@ -31,6 +31,9 @@ export async function deleteFeeComponentAction(_prev: FormState, formData: FormD
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Missing id" };
 
+  const existing = await db.feeComponent.findUnique({ where: { id } });
+  if (!existing) return { error: "Fee component not found." };
+
   await db.feeComponent.update({ where: { id }, data: { deletedAt: new Date() } });
   await recordAudit({ actorId: session.userId, action: "fee_component.delete", entityType: "FeeComponent", entityId: id });
   revalidatePath("/admin/finance/fee-structure");

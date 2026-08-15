@@ -42,6 +42,9 @@ export async function deleteOrganizationAction(_prev: FormState, formData: FormD
     return { error: `Cannot delete: ${branchCount} branch(es) still belong to this organization.` };
   }
 
+  const existing = await db.organization.findUnique({ where: { id } });
+  if (!existing) return { error: "Organization not found." };
+
   await db.organization.update({ where: { id }, data: { deletedAt: new Date() } });
   await recordAudit({ actorId: session.userId, action: "organization.delete", entityType: "Organization", entityId: id });
   revalidatePath("/admin/system-setup/organizations");

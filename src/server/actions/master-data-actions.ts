@@ -37,6 +37,9 @@ export async function deleteCourseAction(_prev: FormState, formData: FormData): 
   const sectionCount = await db.section.count({ where: { courseId: id, deletedAt: null } });
   if (sectionCount > 0) return { error: `Cannot delete: ${sectionCount} section(s) use this course.` };
 
+  const existing = await db.course.findUnique({ where: { id } });
+  if (!existing) return { error: "Course not found." };
+
   await db.course.update({ where: { id }, data: { deletedAt: new Date() } });
   await recordAudit({ actorId: session.userId, action: "course.delete", entityType: "Course", entityId: id });
   revalidatePath("/admin/system-setup/master-data");
@@ -65,6 +68,9 @@ export async function deleteSubjectAction(_prev: FormState, formData: FormData):
   const session = await requirePermission("system.master_data", "DELETE");
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Missing subject id" };
+
+  const existing = await db.subject.findUnique({ where: { id } });
+  if (!existing) return { error: "Subject not found." };
 
   await db.subject.update({ where: { id }, data: { deletedAt: new Date() } });
   await recordAudit({ actorId: session.userId, action: "subject.delete", entityType: "Subject", entityId: id });

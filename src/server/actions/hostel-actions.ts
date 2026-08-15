@@ -104,8 +104,12 @@ export async function assignHostelRoomAction(_prev: FormState, formData: FormDat
   assertBranchAccess(session, student.branchId);
 
   if (parsed.data.hostelRoomId) {
-    const room = await db.hostelRoom.findUnique({ where: { id: parsed.data.hostelRoomId }, include: { _count: { select: { students: true } } } });
+    const room = await db.hostelRoom.findUnique({
+      where: { id: parsed.data.hostelRoomId },
+      include: { hostel: true, _count: { select: { students: true } } },
+    });
     if (!room) return { error: "Room not found." };
+    if (room.hostel.branchId !== student.branchId) return { error: "That room does not belong to this student's branch." };
     if (room._count.students >= room.capacity) return { error: "This room is already at capacity." };
   }
 

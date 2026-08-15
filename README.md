@@ -2,9 +2,9 @@
 
 A PowerSchool-style school management system for **Sree Siva Shankar Vidya Mandir** (K.R.M. Colony) — four portals (Admin, Teacher, Student, Parent) on one Next.js app, one PostgreSQL database, and one Prisma schema. See `ARCHITECTURE.md` for the full stack rationale and design decisions.
 
-## Status: Phase 9 of 10 (Student & Parent portals)
+## Status: Phase 10 of 10 — feature-complete
 
-This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–9 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, Attendance + Timetable, Exams & Assessments, Syllabus/Schedule/Lesson Plans, the full Communication module across all four portals, Finance & Fees, Admissions & Certificates, Staff/HR + Transport + Hostel, and now the closing Student/Parent feature set (read-only Attendance, Exam Results, and Timetable views, the last three "Coming soon" placeholders on both dashboards). Phase 10 (the accessibility/security hardening pass) is not yet built — see `ARCHITECTURE.md` for the build order.
+This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **All ten phases are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, Attendance + Timetable, Exams & Assessments, Syllabus/Schedule/Lesson Plans, the full Communication module across all four portals, Finance & Fees, Admissions & Certificates, Staff/HR + Transport + Hostel, the closing Student/Parent feature set (read-only Attendance, Exam Results, Timetable), and a Phase 10 hardening pass (see below) that found and fixed four real cross-branch data-isolation gaps.
 
 ## Running locally
 
@@ -69,6 +69,32 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **Transport**: Vehicles (branch-scoped CRUD) and Routes & Stops, where a route's stops are edited as a dynamic per-row list (create/update/delete-diffed in one transaction, the same pattern as Exam↔ExamSubject from Phase 4). Deleting a stop or route is blocked with a friendly error if a student is still assigned to it, rather than a raw FK-constraint 500.
 - **Hostel**: Hostels (buildings, with an optional warden) and Rooms, with occupancy counts. Room capacity is enforced at assignment time (can't over-allot a room) and deletion is blocked while any student is still allotted.
 - **Student ↔ Transport/Hostel assignment lives on the Student Master detail page**, not as a separate bulk-mover screen — a compact "Transport" and "Hostel" card (visible only with `transport.routes`/`hostel.manage` EDIT permission) lets an admin assign one student to a route stop or hostel room, matching how `Section` assignment already lives directly on the `Student` record rather than a parallel assignment table.
+
+## Phase 10: Hardening pass
+
+Unlike Phases 1–9, this phase built no new features — it's a review-and-fix pass across the whole app, per the spec's Section 9/11 requirements.
+
+**Security / data-isolation audit.** Every server action added in Phases 7–9 (Admissions, Certificates, HR, Payroll, Transport, Hostel — 9 files, 33 exported actions) was independently re-read against a checklist: does it check permission before touching data, does it re-verify branch ownership on every record fetched by a caller-supplied ID (not just the primary record, but any *related* record referenced by a foreign key from the form), and does it audit-log every mutation. This found **four real cross-branch data-isolation gaps**, all now fixed:
+
+- `convertEnquiryAction` accepted a `sectionId` from the form without checking it belonged to the enquiry's own branch — a branch-scoped admin could admit a student into a different branch's section.
+- `markStaffAttendanceAction` checked the target `branchId` but never verified that each `staffMemberId` in the submitted roster actually belonged to that branch — could cross-link another branch's staff into your branch's attendance record.
+- `assignStudentTransportAction` checked the student's branch but never checked the `routeStopId`'s own route's branch — could assign a student to another branch's bus route.
+- `assignHostelRoomAction` had the identical gap for `hostelRoomId` against the room's hostel's branch.
+
+All four are now guarded by an explicit branch-equality check on the *related* record before the write, with a friendly rejection message — not just on the primary record being mutated. This is the same class of bug as Phase 6's unhandled-`P2002` duplicate-name crash: correct-looking code that only checks the record you already had `assertBranchAccess`-ed, not the second ID that rides along with it in the same form submission. Verified with a live regression pass (all four legitimate same-branch flows still succeed post-fix) and independent code review (a fresh review pass with no stake in the original implementation, specifically hunting for this class of gap).
+
+While auditing, six pre-existing "soft-delete" actions across earlier phases (`deleteBranchAction`, `deleteOrganizationAction`, `deleteFeeComponentAction`, `deleteSalaryComponentAction`, `deleteCourseAction`, `deleteSubjectAction`) were found to call `db.model.update({ where: { id }, ... })` with no existence check first — a tampered or already-deleted `id` would throw an unhandled Prisma `P2025` and surface as a raw 500, the same anti-pattern class as Phase 6's finding. All six now fetch-and-check first.
+
+**Accessibility spot-check**, verified live in a browser rather than by inspection alone: the skip-to-content link is the first Tab stop on the login page; a form dialog (Staff Master's "Add Staff") traps focus inside itself and closes on Escape; every field has a programmatically-associated `<label>`; a Radix `Select` opens with the keyboard (`Enter`), not just a mouse click; `<DataTable>` column headers still carry `aria-sort`; the Student portal's mobile bottom-nav and heading structure render correctly. All new Phase 7–9 forms were also grep-audited for any raw `<input>`/`<select>` bypassing the shared `FormField`/`aria-label` pattern — none found; every new form field goes through the same accessible primitives Phase 1 established, so accessibility compliance is structural rather than something re-verified field-by-field.
+
+**Performance pass**: reviewed every new Phase 7–9 service for unbounded queries. Vehicles/Routes/Hostels intentionally use a plain in-page list instead of `<DataTable>` (documented in Phase 8 as a scale-appropriate choice — a school has a handful of buses, not hundreds); everything user-facing that could grow large (Staff Master, TC lists, students) is paginated via the shared `toPrismaSkipTake()`. No N+1 query patterns found beyond the already-necessary per-exam rank computation (`listExamResultsForStudent` calls `getExamResultsForSection` once per exam because rank is inherently a whole-section computation, not a per-student one — this is required correctness, not accidental waste).
+
+**Section 11 pitfall checklist**, re-walked explicitly:
+- Broken "Add" buttons — every "Add"/"Create" flow across all ten phases was exercised end-to-end via browser automation during that phase's own QA; none found broken.
+- Chart-container crashes — every chart (`FeeProgressChart`, `AttendanceProgressChart`, admissions/finance dashboard charts) goes through the shared `<ChartContainer>` wrapper with a guaranteed-present mount point and an accessible table fallback; none render directly.
+- Date-picker bugs — all date inputs are native `<input type="date">` via the shared `FormField`/`UrlDateInput` pattern; no custom date-picker widget was ever built.
+- Empty/broken nav pages — every nav item added in every phase links to a real page backed by real seeded or QA-created data, verified live each phase; none are placeholders (the two dashboards' one legitimate "Coming soon" card was resolved in Phase 9, not left in).
+- Native-bridge code in a web context — never applicable; no native-app bridge code exists anywhere in this codebase.
 
 ## What's built (Phase 9 adds)
 
