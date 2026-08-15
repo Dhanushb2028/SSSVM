@@ -49,6 +49,12 @@ import {
   Kanban,
   FileText,
   ClipboardType,
+  Briefcase,
+  CalendarCheck,
+  IndianRupee,
+  Bus,
+  Route,
+  Building,
 } from "lucide-react";
 import { requireRole, hasPermission } from "@/lib/rbac/permissions";
 import { getSession } from "@/lib/auth/session";
@@ -171,6 +177,25 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { label: "Bulk Upload", href: "/admin/certificates/bulk-upload", icon: icon(ClipboardType), module: "certificates.tc" },
   ]);
   if (certificates) navSections.push(certificates);
+
+  const hr = buildSection(session, "Staff / HR", [
+    { label: "Staff Master", href: "/admin/hr/staff", icon: icon(Briefcase), module: "hr.staff" },
+    { label: "Attendance / OD", href: "/admin/hr/attendance", icon: icon(CalendarCheck), module: "hr.attendance" },
+    { label: "Attendance / OD Report", href: "/admin/hr/attendance/reports", icon: icon(ClipboardList), module: "hr.attendance" },
+    { label: "Payroll", href: "/admin/hr/payroll", icon: icon(IndianRupee), module: "hr.payroll" },
+  ]);
+  if (hr) navSections.push(hr);
+
+  const transport = buildSection(session, "Transport", [
+    { label: "Vehicles", href: "/admin/transport/vehicles", icon: icon(Bus), module: "transport.vehicles" },
+    { label: "Routes & Stops", href: "/admin/transport/routes", icon: icon(Route), module: "transport.routes" },
+  ]);
+  if (transport) navSections.push(transport);
+
+  const hostel = buildSection(session, "Hostel", [
+    { label: "Hostel", href: "/admin/hostel", icon: icon(Building), module: "hostel.manage" },
+  ]);
+  if (hostel) navSections.push(hostel);
 
   navSections.push({
     title: "Account",

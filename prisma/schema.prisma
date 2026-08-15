@@ -28,6 +28,7 @@ model Organization {
   examTypes        ExamType[]
   competitiveExams CompetitiveExam[]
   feeComponents    FeeComponent[]
+  salaryComponents SalaryComponent[]
 
   @@map("organizations")
 }
@@ -63,6 +64,11 @@ model Branch {
   bankTransactions   BankTransaction[]
   marketingOfficers  MarketingOfficer[]
   admissionEnquiries AdmissionEnquiry[]
+  staffAttendance    StaffAttendance[]
+  payslips           Payslip[]
+  vehicles           Vehicle[]
+  transportRoutes    TransportRoute[]
+  hostels            Hostel[]
 
   @@index([organizationId])
   @@map("branches")
@@ -204,12 +210,16 @@ model Student {
   motherName      String?
   nationality     String?
   category        String?
+  routeStopId     String?
+  hostelRoomId    String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
 
   branch               Branch                @relation(fields: [branchId], references: [id])
   section              Section?              @relation(fields: [sectionId], references: [id])
+  routeStop            RouteStop?            @relation(fields: [routeStopId], references: [id])
+  hostelRoom           HostelRoom?           @relation(fields: [hostelRoomId], references: [id])
   guardians            StudentGuardian[]
   user                 User?
   attendance           Attendance[]
@@ -225,6 +235,8 @@ model Student {
   @@index([sectionId])
   @@index([status])
   @@index([deletedAt])
+  @@index([routeStopId])
+  @@index([hostelRoomId])
   @@map("students")
 }
 
@@ -270,25 +282,47 @@ model StudentGuardian {
   @@map("student_guardians")
 }
 
-model StaffMember {
-  id           String    @id @default(cuid())
-  branchId     String
-  employeeCode String    @unique
-  firstName    String
-  lastName     String
-  designation  String
-  phone        String
-  email        String?
-  address      String?
-  joinDate     DateTime  @default(now())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
+enum EmploymentType {
+  PERMANENT
+  CONTRACT
+  PART_TIME
+}
 
-  branch           Branch           @relation(fields: [branchId], references: [id])
-  user             User?
-  classesAsTeacher Section[]        @relation("SectionClassTeacher")
-  timetableEntries TimetableEntry[]
+enum StaffStatus {
+  ACTIVE
+  LEFT
+}
+
+model StaffMember {
+  id             String         @id @default(cuid())
+  branchId       String
+  employeeCode   String         @unique
+  firstName      String
+  lastName       String
+  designation    String
+  department     String?
+  employmentType EmploymentType @default(PERMANENT)
+  qualification  String?
+  photoUrl       String?
+  phone          String
+  email          String?
+  address        String?
+  joinDate       DateTime       @default(now())
+  status         StaffStatus    @default(ACTIVE)
+  leftDate       DateTime?
+  leftReason     String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+
+  branch            Branch             @relation(fields: [branchId], references: [id])
+  user              User?
+  classesAsTeacher  Section[]          @relation("SectionClassTeacher")
+  timetableEntries  TimetableEntry[]
+  attendance        StaffAttendance[]
+  salaryStructure   StaffSalaryComponent[]
+  payslips          Payslip[]
+  wardenOf          Hostel[]
 
   @@index([branchId])
   @@index([deletedAt])
@@ -369,10 +403,12 @@ model User {
   guardian          Guardian?          @relation(fields: [guardianId], references: [id])
   staffMember       StaffMember?       @relation(fields: [staffMemberId], references: [id])
 
-  sessions         Session[]
-  auditLogs        AuditLog[]
-  attendanceMarked Attendance[]
-  chatMessages     ChatMessage[]
+  sessions              Session[]
+  auditLogs             AuditLog[]
+  attendanceMarked      Attendance[]
+  chatMessages          ChatMessage[]
+  staffAttendanceMarked StaffAttendance[]
+  payslipsGenerated     Payslip[]
 
   @@index([role])
   @@index([branchId])
@@ -1016,4 +1052,183 @@ model AdmissionEnquiry {
   @@index([branchId])
   @@index([status])
   @@map("admission_enquiries")
+}
+
+// ---------------------------------------------------------------------------
+// Staff / HR (Phase 8)
+// ---------------------------------------------------------------------------
+
+enum StaffAttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  ON_DUTY
+  LEAVE
+}
+
+model StaffAttendance {
+  id             String                 @id @default(cuid())
+  staffMemberId  String
+  branchId       String
+  date           DateTime               @db.Date
+  status         StaffAttendanceStatus
+  remarks        String?
+  markedByUserId String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  staffMember StaffMember @relation(fields: [staffMemberId], references: [id])
+  branch      Branch      @relation(fields: [branchId], references: [id])
+  markedBy    User?       @relation(fields: [markedByUserId], references: [id])
+
+  @@unique([staffMemberId, date])
+  @@index([branchId, date])
+  @@map("staff_attendance")
+}
+
+enum SalaryComponentType {
+  EARNING
+  DEDUCTION
+}
+
+model SalaryComponent {
+  id             String              @id @default(cuid())
+  organizationId String
+  name           String
+  type           SalaryComponentType
+  createdAt      DateTime            @default(now())
+  deletedAt      DateTime?
+
+  organization Organization            @relation(fields: [organizationId], references: [id])
+  structures   StaffSalaryComponent[]
+
+  @@unique([organizationId, name])
+  @@map("salary_components")
+}
+
+// Per-staff amount for a salary component; mirrors FeeStructure's per-course
+// amount grid, edited the same way (one grid save per staff member).
+model StaffSalaryComponent {
+  id                String   @id @default(cuid())
+  staffMemberId     String
+  salaryComponentId String
+  amount            Float
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  staffMember     StaffMember     @relation(fields: [staffMemberId], references: [id])
+  salaryComponent SalaryComponent @relation(fields: [salaryComponentId], references: [id])
+
+  @@unique([staffMemberId, salaryComponentId])
+  @@map("staff_salary_components")
+}
+
+// A generated payslip snapshots the salary structure at generation time (like
+// a fee receipt) so later salary-structure edits never rewrite payroll history.
+model Payslip {
+  id              String   @id @default(cuid())
+  staffMemberId   String
+  branchId        String
+  month           Int
+  year            Int
+  breakdown       Json
+  grossEarnings   Float
+  totalDeductions Float
+  netPay          Float
+  generatedById   String?
+  createdAt       DateTime @default(now())
+
+  staffMember StaffMember @relation(fields: [staffMemberId], references: [id])
+  branch      Branch      @relation(fields: [branchId], references: [id])
+  generatedBy User?       @relation(fields: [generatedById], references: [id])
+
+  @@unique([staffMemberId, month, year])
+  @@index([branchId, year, month])
+  @@map("payslips")
+}
+
+// ---------------------------------------------------------------------------
+// Transport (Phase 8)
+// ---------------------------------------------------------------------------
+
+model Vehicle {
+  id            String    @id @default(cuid())
+  branchId      String
+  vehicleNumber String
+  capacity      Int
+  driverName    String
+  driverPhone   String
+  deletedAt     DateTime?
+
+  branch Branch           @relation(fields: [branchId], references: [id])
+  routes TransportRoute[]
+
+  @@unique([branchId, vehicleNumber])
+  @@index([branchId])
+  @@map("vehicles")
+}
+
+model TransportRoute {
+  id         String    @id @default(cuid())
+  branchId   String
+  name       String
+  vehicleId  String?
+  monthlyFee Float     @default(0)
+  deletedAt  DateTime?
+
+  branch  Branch      @relation(fields: [branchId], references: [id])
+  vehicle Vehicle?    @relation(fields: [vehicleId], references: [id])
+  stops   RouteStop[]
+
+  @@unique([branchId, name])
+  @@index([branchId])
+  @@map("transport_routes")
+}
+
+model RouteStop {
+  id         String @id @default(cuid())
+  routeId    String
+  name       String
+  pickupTime String
+  sequence   Int    @default(0)
+
+  route    TransportRoute @relation(fields: [routeId], references: [id])
+  students Student[]
+
+  @@index([routeId])
+  @@map("route_stops")
+}
+
+// ---------------------------------------------------------------------------
+// Hostel (Phase 8)
+// ---------------------------------------------------------------------------
+
+model Hostel {
+  id        String    @id @default(cuid())
+  branchId  String
+  name      String
+  wardenId  String?
+  deletedAt DateTime?
+
+  branch Branch       @relation(fields: [branchId], references: [id])
+  warden StaffMember? @relation(fields: [wardenId], references: [id])
+  rooms  HostelRoom[]
+
+  @@unique([branchId, name])
+  @@index([branchId])
+  @@map("hostels")
+}
+
+model HostelRoom {
+  id         String @id @default(cuid())
+  hostelId   String
+  roomNumber String
+  capacity   Int
+
+  hostel   Hostel    @relation(fields: [hostelId], references: [id])
+  students Student[]
+
+  @@unique([hostelId, roomNumber])
+  @@index([hostelId])
+  @@map("hostel_rooms")
 }

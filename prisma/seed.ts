@@ -237,6 +237,81 @@ async function main() {
     }
   }
 
+  // --- HR: non-teaching staff, salary components, a sample salary structure ---
+  const accountant = await db.staffMember.create({
+    data: {
+      branchId: branch.id,
+      employeeCode: "SSSVM-S001",
+      firstName: "Geeta",
+      lastName: "Menon",
+      designation: "Accountant",
+      department: "Administration",
+      employmentType: "PERMANENT",
+      phone: "9000000010",
+    },
+  });
+  await db.staffMember.create({
+    data: {
+      branchId: branch.id,
+      employeeCode: "SSSVM-S002",
+      firstName: "Muthu",
+      lastName: "Das",
+      designation: "Office Assistant",
+      department: "Administration",
+      employmentType: "CONTRACT",
+      phone: "9000000011",
+    },
+  });
+
+  const basicPay = await db.salaryComponent.create({
+    data: { organizationId: organization.id, name: "Basic Pay", type: "EARNING" },
+  });
+  const hra = await db.salaryComponent.create({
+    data: { organizationId: organization.id, name: "HRA", type: "EARNING" },
+  });
+  const pf = await db.salaryComponent.create({
+    data: { organizationId: organization.id, name: "Provident Fund", type: "DEDUCTION" },
+  });
+  await db.staffSalaryComponent.createMany({
+    data: [
+      { staffMemberId: accountant.id, salaryComponentId: basicPay.id, amount: 25000 },
+      { staffMemberId: accountant.id, salaryComponentId: hra.id, amount: 5000 },
+      { staffMemberId: accountant.id, salaryComponentId: pf.id, amount: 1800 },
+    ],
+  });
+
+  // --- Transport: one vehicle, one route with stops ---
+  const vehicle = await db.vehicle.create({
+    data: { branchId: branch.id, vehicleNumber: "TS-09-EA-1234", capacity: 40, driverName: "Ramesh Naidu", driverPhone: "9000000020" },
+  });
+  const route = await db.transportRoute.create({
+    data: { branchId: branch.id, name: "Route 1 - K.R.M. Colony", vehicleId: vehicle.id, monthlyFee: 1200 },
+  });
+  const stop1 = await db.routeStop.create({
+    data: { routeId: route.id, name: "K.R.M. Colony Bus Stop", pickupTime: "07:15 AM", sequence: 1 },
+  });
+  await db.routeStop.create({
+    data: { routeId: route.id, name: "Market Junction", pickupTime: "07:30 AM", sequence: 2 },
+  });
+
+  // --- Hostel: one building, a couple of rooms ---
+  const hostel = await db.hostel.create({
+    data: { branchId: branch.id, name: "Boys Hostel Block A", wardenId: accountant.id },
+  });
+  const room101 = await db.hostelRoom.create({
+    data: { hostelId: hostel.id, roomNumber: "101", capacity: 4 },
+  });
+  await db.hostelRoom.create({
+    data: { hostelId: hostel.id, roomNumber: "102", capacity: 4 },
+  });
+
+  const [transportStudent, hostelStudent] = await db.student.findMany({
+    where: { admissionNumber: { in: ["SSSVM2025-001", "SSSVM2025-002"] } },
+    orderBy: { admissionNumber: "asc" },
+  });
+  if (transportStudent) await db.student.update({ where: { id: transportStudent.id }, data: { routeStopId: stop1.id } });
+  if (hostelStudent) await db.student.update({ where: { id: hostelStudent.id }, data: { hostelRoomId: room101.id } });
+
   console.log("Seed complete.");
   console.log("");
   console.log("Demo logins:");

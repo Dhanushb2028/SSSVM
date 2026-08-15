@@ -11,6 +11,7 @@ import { trashStudentAction } from "@/server/actions/student-actions";
 import { StudentForm } from "../student-form";
 import { GuardiansSection } from "./guardians-section";
 import { MarkLeftDialog } from "./mark-left-dialog";
+import { TransportSection, HostelSection } from "./transport-hostel-section";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requirePermissionOrRedirect("sis.students", "VIEW");
@@ -94,6 +95,30 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           isPrimary: g.isPrimary,
         }))}
       />
+
+      {hasPermission(session, "transport.routes", "EDIT") && (
+        <TransportSection
+          studentId={student.id}
+          routeStopId={student.routeStopId}
+          routeStops={await db.routeStop.findMany({
+            where: { route: { branchId: student.branchId, deletedAt: null } },
+            include: { route: true },
+            orderBy: { sequence: "asc" },
+          })}
+        />
+      )}
+
+      {hasPermission(session, "hostel.manage", "EDIT") && (
+        <HostelSection
+          studentId={student.id}
+          hostelRoomId={student.hostelRoomId}
+          hostelRooms={await db.hostelRoom.findMany({
+            where: { hostel: { branchId: student.branchId, deletedAt: null } },
+            include: { hostel: true },
+            orderBy: { roomNumber: "asc" },
+          })}
+        />
+      )}
     </div>
   );
 }
