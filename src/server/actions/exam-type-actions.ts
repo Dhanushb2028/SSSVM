@@ -16,6 +16,9 @@ export async function createExamTypeAction(_prev: FormState, formData: FormData)
   const org = await db.organization.findFirst({ where: { deletedAt: null } });
   if (!org) return { error: "No organization exists yet." };
 
+  const existing = await db.examType.findFirst({ where: { organizationId: org.id, name: parsed.data.name } });
+  if (existing) return { error: "An exam type with this name already exists." };
+
   const examType = await db.examType.create({ data: { organizationId: org.id, name: parsed.data.name } });
   await recordAudit({ actorId: session.userId, action: "exam_type.create", entityType: "ExamType", entityId: examType.id });
   revalidatePath("/admin/exams/types");

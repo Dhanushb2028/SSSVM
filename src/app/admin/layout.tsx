@@ -40,6 +40,11 @@ import {
   Video,
   MessageCircle,
   Send,
+  Wallet,
+  Receipt,
+  BookText,
+  Landmark as BankIcon,
+  FileSpreadsheet,
 } from "lucide-react";
 import { requireRole, hasPermission } from "@/lib/rbac/permissions";
 import { getSession } from "@/lib/auth/session";
@@ -138,6 +143,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { label: "Bulk SMS", href: "/admin/bulk-sms", icon: icon(Send), module: "comms.sms" },
   ]);
   if (communication) navSections.push(communication);
+
+  const finance = buildSection(session, "Finance", [
+    { label: "Fee Structure", href: "/admin/finance/fee-structure", icon: icon(Wallet), module: "finance.fee_structure" },
+    { label: "Fee Ledger", href: "/admin/finance/ledger", icon: icon(Receipt), module: "finance.transactions" },
+    { label: "Fee Due Report", href: "/admin/finance/fee-due", icon: icon(FileSpreadsheet), module: "finance.reports" },
+    { label: "Expenditure", href: "/admin/finance/expenditure", icon: icon(BookText), module: "finance.expenditure" },
+    { label: "Banking", href: "/admin/finance/banking", icon: icon(BankIcon), module: "finance.banking" },
+    { label: "Reports", href: "/admin/finance/reports", icon: icon(BarChart3), module: "finance.reports" },
+  ]);
+  if (finance) navSections.push(finance);
 
   navSections.push({
     title: "Account",

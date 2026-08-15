@@ -25,6 +25,9 @@ export async function createPermissionProfileAction(_prev: FormState, formData: 
   const parsed = toData(formData);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
 
+  const existing = await db.permissionProfile.findUnique({ where: { name: parsed.data.name } });
+  if (existing) return { error: "A role with this name already exists." };
+
   const profile = await db.permissionProfile.create({
     data: {
       name: parsed.data.name,

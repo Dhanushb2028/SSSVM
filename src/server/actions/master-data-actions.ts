@@ -20,6 +20,9 @@ export async function createCourseAction(_prev: FormState, formData: FormData): 
   const organizationId = await firstOrgId();
   if (!organizationId) return { error: "No organization exists yet." };
 
+  const existing = await db.course.findFirst({ where: { organizationId, name: parsed.data.name, deletedAt: null } });
+  if (existing) return { error: "A course with this name already exists." };
+
   const course = await db.course.create({ data: { organizationId, ...parsed.data } });
   await recordAudit({ actorId: session.userId, action: "course.create", entityType: "Course", entityId: course.id });
   revalidatePath("/admin/system-setup/master-data");
@@ -46,6 +49,9 @@ export async function createSubjectAction(_prev: FormState, formData: FormData):
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   const organizationId = await firstOrgId();
   if (!organizationId) return { error: "No organization exists yet." };
+
+  const existingSubject = await db.subject.findFirst({ where: { organizationId, name: parsed.data.name, deletedAt: null } });
+  if (existingSubject) return { error: "A subject with this name already exists." };
 
   const subject = await db.subject.create({
     data: { organizationId, name: parsed.data.name, code: parsed.data.code || null },

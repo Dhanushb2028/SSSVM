@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuickLinksGrid } from "@/components/shared/quick-links-grid";
+import { StudentFeeSummary } from "@/components/shared/student-fee-summary";
 
 const QUICK_LINKS = [
   { label: "Notifications", href: "/parent/notifications", icon: Bell },
@@ -34,19 +35,22 @@ export default async function ParentDashboardPage() {
         </Card>
       ) : (
         links.map((link) => (
-          <Card key={link.id}>
-            <CardHeader>
-              <CardTitle>{link.student.firstName} {link.student.lastName}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-1 text-sm text-muted-foreground">
-              <p>Admission No. {link.student.admissionNumber} · {link.student.branch.name}</p>
-              <p>
-                {link.student.section
-                  ? `${link.student.section.course.name} - ${link.student.section.name}`
-                  : "Not yet assigned to a section"}
-              </p>
-            </CardContent>
-          </Card>
+          <div key={link.id} className="flex flex-col gap-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>{link.student.firstName} {link.student.lastName}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-1 text-sm text-muted-foreground">
+                <p>Admission No. {link.student.admissionNumber} · {link.student.branch.name}</p>
+                <p>
+                  {link.student.section
+                    ? `${link.student.section.course.name} - ${link.student.section.name}`
+                    : "Not yet assigned to a section"}
+                </p>
+              </CardContent>
+            </Card>
+            <StudentFeeSummary studentId={link.student.id} branchId={link.student.branchId} />
+          </div>
         ))
       )}
 
@@ -57,7 +61,7 @@ export default async function ParentDashboardPage() {
           <CardTitle>Coming soon</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Attendance, exam results, fee status, and timetable views will appear here as those modules roll out.
+          Attendance, exam results, and timetable views will appear here as those modules roll out.
         </CardContent>
       </Card>
     </div>

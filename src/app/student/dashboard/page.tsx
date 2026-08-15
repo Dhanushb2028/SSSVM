@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { QuickLinksGrid } from "@/components/shared/quick-links-grid";
+import { StudentFeeSummary } from "@/components/shared/student-fee-summary";
 
 const QUICK_LINKS = [
   { label: "Notifications", href: "/student/notifications", icon: Bell },
@@ -50,12 +51,14 @@ export default async function StudentDashboardPage() {
 
       <QuickLinksGrid links={QUICK_LINKS} />
 
+      {student && <StudentFeeSummary studentId={student.id} branchId={student.branchId} />}
+
       <Card>
         <CardHeader>
           <CardTitle>Coming soon</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Attendance, exam results, fees, and timetable views will appear here as those modules roll out.
+          Attendance, exam results, and timetable views will appear here as those modules roll out.
         </CardContent>
       </Card>
     </div>

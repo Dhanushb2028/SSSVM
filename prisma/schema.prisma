@@ -27,6 +27,7 @@ model Organization {
   subjects         Subject[]
   examTypes        ExamType[]
   competitiveExams CompetitiveExam[]
+  feeComponents    FeeComponent[]
 
   @@map("organizations")
 }
@@ -43,19 +44,23 @@ model Branch {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization   Organization    @relation(fields: [organizationId], references: [id])
-  academicYears  AcademicYear[]
-  sections       Section[]
-  students       Student[]
-  staffMembers   StaffMember[]
-  users          User[]
-  appBanners     AppBanner[]
-  scheduleEvents ScheduleEvent[]
-  exams          Exam[]
-  notifications  Notification[]
-  circulars      Circular[]
-  galleryAlbums  GalleryAlbum[]
-  videos         Video[]
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  academicYears    AcademicYear[]
+  sections         Section[]
+  students         Student[]
+  staffMembers     StaffMember[]
+  users            User[]
+  appBanners       AppBanner[]
+  scheduleEvents   ScheduleEvent[]
+  exams            Exam[]
+  notifications    Notification[]
+  circulars        Circular[]
+  galleryAlbums    GalleryAlbum[]
+  videos           Video[]
+  feeStructures    FeeStructure[]
+  feeTransactions  FeeTransaction[]
+  expenses         Expense[]
+  bankTransactions BankTransaction[]
 
   @@index([organizationId])
   @@map("branches")
@@ -71,9 +76,11 @@ model AcademicYear {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branch   Branch    @relation(fields: [branchId], references: [id])
-  sections Section[]
-  exams    Exam[]
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  sections        Section[]
+  exams           Exam[]
+  feeStructures   FeeStructure[]
+  feeTransactions FeeTransaction[]
 
   @@unique([branchId, name])
   @@index([branchId])
@@ -89,8 +96,9 @@ model Course {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  sections     Section[]
+  organization  Organization   @relation(fields: [organizationId], references: [id])
+  sections      Section[]
+  feeStructures FeeStructure[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -201,6 +209,7 @@ model Student {
   homeworkSubmissions  HomeworkSubmission[]
   notifications        Notification[]
   chatThread           ChatThread?
+  feeTransactions      FeeTransaction[]
 
   @@index([branchId])
   @@index([sectionId])
@@ -801,4 +810,138 @@ model ChatMessage {
 
   @@index([threadId])
   @@map("chat_messages")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 6: Finance & Fees (Section 6.10)
+// ---------------------------------------------------------------------------
+
+enum FeeComponentCategory {
+  TUITION
+  TRANSPORT
+  HOSTEL
+  BOOKS
+  UNIFORM
+  OTHER
+}
+
+model FeeComponent {
+  id             String               @id @default(cuid())
+  organizationId String
+  name           String
+  category       FeeComponentCategory @default(TUITION)
+  createdAt      DateTime             @default(now())
+  deletedAt      DateTime?
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  structures   FeeStructure[]
+
+  @@unique([organizationId, name])
+  @@map("fee_components")
+}
+
+model FeeStructure {
+  id             String   @id @default(cuid())
+  branchId       String
+  courseId       String
+  academicYearId String
+  feeComponentId String
+  amount         Float
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  branch       Branch       @relation(fields: [branchId], references: [id])
+  course       Course       @relation(fields: [courseId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  feeComponent FeeComponent @relation(fields: [feeComponentId], references: [id])
+
+  @@unique([branchId, courseId, academicYearId, feeComponentId])
+  @@index([branchId])
+  @@index([courseId])
+  @@index([academicYearId])
+  @@map("fee_structures")
+}
+
+enum PaymentMode {
+  CASH
+  CHEQUE
+  ONLINE
+  CARD
+}
+
+model FeeTransaction {
+  id                String      @id @default(cuid())
+  receiptNumber     String      @unique
+  studentId         String
+  branchId          String
+  academicYearId    String
+  amount            Float
+  mode              PaymentMode
+  paidDate          DateTime    @db.Date
+  remarks           String?
+  collectedByUserId String?
+  isCancelled       Boolean     @default(false)
+  cancelledReason   String?
+  cancelledAt       DateTime?
+  cancelledByUserId String?
+  createdAt         DateTime    @default(now())
+
+  student      Student      @relation(fields: [studentId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  @@index([studentId])
+  @@index([branchId])
+  @@index([paidDate])
+  @@map("fee_transactions")
+}
+
+model Expense {
+  id                String    @id @default(cuid())
+  branchId          String
+  category          String?
+  description       String
+  amount            Float
+  date              DateTime  @db.Date
+  createdByUserId   String?
+  isCancelled       Boolean   @default(false)
+  cancelledReason   String?
+  cancelledAt       DateTime?
+  cancelledByUserId String?
+  createdAt         DateTime  @default(now())
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+  @@index([date])
+  @@map("expenses")
+}
+
+enum BankTransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  RECEIVE
+  PAY
+  LOAN
+}
+
+model BankTransaction {
+  id                String              @id @default(cuid())
+  branchId          String
+  type              BankTransactionType
+  amount            Float
+  date              DateTime            @db.Date
+  description       String?
+  createdByUserId   String?
+  isCancelled       Boolean             @default(false)
+  cancelledReason   String?
+  cancelledAt       DateTime?
+  cancelledByUserId String?
+  createdAt         DateTime            @default(now())
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+  @@index([date])
+  @@map("bank_transactions")
 }

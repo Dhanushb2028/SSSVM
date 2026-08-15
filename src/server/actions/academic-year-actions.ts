@@ -33,6 +33,11 @@ export async function createAcademicYearAction(_prev: FormState, formData: FormD
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   assertBranchAccess(session, parsed.data.branchId);
 
+  const existing = await db.academicYear.findUnique({
+    where: { branchId_name: { branchId: parsed.data.branchId, name: parsed.data.name } },
+  });
+  if (existing) return { error: "An academic year with this name already exists for this branch." };
+
   const year = await db.academicYear.create({
     data: {
       branchId: parsed.data.branchId,

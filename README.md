@@ -2,9 +2,9 @@
 
 A PowerSchool-style school management system for **Sree Siva Shankar Vidya Mandir** (K.R.M. Colony) — four portals (Admin, Teacher, Student, Parent) on one Next.js app, one PostgreSQL database, and one Prisma schema. See `ARCHITECTURE.md` for the full stack rationale and design decisions.
 
-## Status: Phase 5 of 10 (Communication)
+## Status: Phase 6 of 10 (Finance & Fees)
 
-This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–5 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, Attendance + Timetable, Exams & Assessments, Syllabus/Schedule/Lesson Plans, and now the full Communication module (Homework with student submission, Notifications, Circulars, Gallery, Videos, Chat, Bulk SMS) across **all four portals**. Phases 6–10 (Finance, Admissions/Certificates, HR/Transport/Hostel, the rest of the Student/Parent portals' feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
+This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–6 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, Attendance + Timetable, Exams & Assessments, Syllabus/Schedule/Lesson Plans, the full Communication module across all four portals, and now Finance & Fees (fee structure, receipts/ledger, cancellation with audit, expenditure, banking, reports, and a read-only fee-status view for Student/Parent). Phases 7–10 (Admissions/Certificates, HR/Transport/Hostel, the rest of the Student/Parent portals' feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
 
 ## Running locally
 
@@ -90,6 +90,17 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **Bulk SMS**: Admin-only, permission-gated (`comms.sms`), targeted at all guardians in a branch or all guardians in one course, routed through the stub `NotificationProvider`. Follows the confirm-then-audit-log pattern required for bulk sends (Section 9).
 - **Every Communication feature ships to all four portals in this phase** (not deferred to Phase 9 like other modules' Student/Parent views) — the spec explicitly calls this out for 6.9, unlike Attendance/Exams/Timetable where Student/Parent views are Phase 9 work.
 
+## What's built (Phase 6 adds)
+
+- **Fee Structure**: fee components (categorized Tuition/Transport/Hostel/Books/Uniform/Other) mapped to branch × course × academic year with per-component amounts, editable as one grid save.
+- **Fee Ledger & Receipts**: record a payment against a student, auto-generated sequential receipt number (`RCPT-{year}-{seq}`), a printable fee slip, and receipt cancellation — confirm + reason + audit log, per Section 9's destructive-financial-action requirement.
+- **Fee Due Report** and **Fee Due SMS**: outstanding-balance summary per student, with a confirm-then-audit-logged bulk SMS reminder to guardians with a balance.
+- **Expenditure** and **Banking**: both follow the cancel-not-delete pattern from Section 5 — a cancelled sub-list stays visible with its reason, nothing is hard-deleted.
+- **Finance Reports**: daily collection, cashier/collector-wise, daily cashbook (running balance across receipts/expenses/bank transactions), income projection (structure due × active headcount vs. actually collected, by course), monthly collection summary, and other-fee-type breakdown — one reports page, not six duplicated ones.
+- **Fee calculation is a pure, unit-tested function** (`computeFeeDue()` in `server/services/fee-calculations.ts`) — the spec's other explicitly-called-out "core business logic needs tests" item alongside rank calculation. It's deliberately written so cancelled receipts can never count toward "paid."
+- **Student/Parent get a read-only fee-status view** on their dashboard: a paid-vs-balance bar chart on the shared `<ChartContainer>` (with its accessible table fallback), plus a status badge.
+- **Bug found and fixed this phase, then swept across the whole codebase**: several "quick add" actions (fee components, exam types, courses, subjects, academic years, permission profiles) called `db.model.create()` directly against a uniquely-constrained field with no pre-check, so submitting a duplicate name crashed with an unhandled 500 instead of a friendly validation error. Caught by an automated re-run of a QA script that happened to submit the same name twice; fixed in all six places, not just the one that surfaced it.
+
 ## What's built (Phase 1)
 
 - **Auth**: custom database-backed sessions (bcrypt hashing, httpOnly cookies, in-memory login rate limiting, instant force-logout on account deactivation/password reset).
@@ -118,6 +129,9 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **Competitive Exam Marks' student picker lists all active students** (capped at 500) rather than a type-ahead search — fine at this school's scale; revisit with a real search endpoint if a deployment has thousands of active students.
 - **Student/Parent mobile bottom nav stays at 4 items** (Home, Homework, Messages, Profile) rather than growing one tab per new module — Notifications/Gallery/Videos/Chat are reachable as quick-link cards on the Home dashboard instead, matching the spec's own description of the Phase 9 parent home ("quick links into ... plus a recent-notifications feed") rather than overloading the tab bar.
 - **Chat has no admin/teacher search-by-name** beyond the plain student list scoped to their sections/branch — fine at this scale, would want pagination/search for a larger deployment.
+- **`FeeTransaction` holds one total amount per receipt**, not a per-fee-component line-item breakdown — matches Section 5's literal field list ("student, amount, date, mode, receipt number, cancelled flag + reason") rather than the more normalized design I used for `ExamMark`/`ExamSubject`; a receipt here is what it pays for in total, not itemized.
+- **Receipt numbers are generated by counting existing rows per branch**, not a DB sequence — correct at this school's transaction volume/concurrency, but two receipts created in the same instant on the same branch could theoretically race; a real production deployment would want a DB-level sequence or advisory lock.
+- **Finance module is Admin-only** (permission-profile-scoped, e.g. a "Finance Staff" role from Phase 1's seed) — unlike Attendance/Timetable/Exams/Communication, Finance has no Teacher-facing screens, matching how the spec frames Section 6.10 as an Admin/finance-staff module throughout.
 
 ## Open follow-ups for v2 (beyond later-phase feature work)
 
