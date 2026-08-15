@@ -1,11 +1,15 @@
-import { Bell, Image as ImageIcon, Video, MessageCircle } from "lucide-react";
+import { Bell, Image as ImageIcon, Video, MessageCircle, ClipboardCheck, FileBarChart, CalendarDays } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuickLinksGrid } from "@/components/shared/quick-links-grid";
 import { StudentFeeSummary } from "@/components/shared/student-fee-summary";
+import { StudentAttendanceSummary } from "@/components/shared/student-attendance-summary";
 
 const QUICK_LINKS = [
+  { label: "Attendance", href: "/parent/attendance", icon: ClipboardCheck },
+  { label: "Results", href: "/parent/results", icon: FileBarChart },
+  { label: "Timetable", href: "/parent/timetable", icon: CalendarDays },
   { label: "Notifications", href: "/parent/notifications", icon: Bell },
   { label: "Gallery", href: "/parent/gallery", icon: ImageIcon },
   { label: "Videos", href: "/parent/videos", icon: Video },
@@ -50,20 +54,12 @@ export default async function ParentDashboardPage() {
               </CardContent>
             </Card>
             <StudentFeeSummary studentId={link.student.id} branchId={link.student.branchId} />
+            <StudentAttendanceSummary studentId={link.student.id} compact />
           </div>
         ))
       )}
 
       <QuickLinksGrid links={QUICK_LINKS} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Coming soon</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Attendance, exam results, and timetable views will appear here as those modules roll out.
-        </CardContent>
-      </Card>
     </div>
   );
 }

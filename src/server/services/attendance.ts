@@ -68,3 +68,23 @@ export async function getSectionAttendanceSummary(sectionId: string, dateFrom: s
   `);
   return rows.map((r) => ({ status: r.status, count: Number(r.count) }));
 }
+
+/** One student's own attendance over a date range — counts by status, percent present, and the list of non-present days. */
+export async function getStudentAttendanceSummary(studentId: string, dateFrom: string, dateTo: string) {
+  const records = await db.attendance.findMany({
+    where: { studentId, date: { gte: new Date(dateFrom), lte: new Date(dateTo) } },
+    orderBy: { date: "desc" },
+  });
+
+  const counts: Record<AttendanceStatus, number> = { PRESENT: 0, ABSENT: 0, LATE: 0, HALF_DAY: 0 };
+  for (const r of records) counts[r.status] += 1;
+  const totalMarked = records.length;
+  const percentPresent = totalMarked > 0 ? Math.round((counts.PRESENT / totalMarked) * 100) : null;
+
+  return {
+    counts,
+    totalMarked,
+    percentPresent,
+    nonPresentDays: records.filter((r) => r.status !== "PRESENT"),
+  };
+}

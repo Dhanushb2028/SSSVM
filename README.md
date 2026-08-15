@@ -2,9 +2,9 @@
 
 A PowerSchool-style school management system for **Sree Siva Shankar Vidya Mandir** (K.R.M. Colony) — four portals (Admin, Teacher, Student, Parent) on one Next.js app, one PostgreSQL database, and one Prisma schema. See `ARCHITECTURE.md` for the full stack rationale and design decisions.
 
-## Status: Phase 8 of 10 (HR, Transport, Hostel)
+## Status: Phase 9 of 10 (Student & Parent portals)
 
-This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–8 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, Attendance + Timetable, Exams & Assessments, Syllabus/Schedule/Lesson Plans, the full Communication module across all four portals, Finance & Fees, Admissions & Certificates, and now Staff/HR, Transport, and Hostel (Staff Master with portal-login generation, Staff Attendance/OD, Payroll, Vehicles, Routes & Stops, and Hostel room allotment). Phases 9–10 (the rest of the Student/Parent portals' feature set, and the accessibility/security hardening pass) are not yet built — see `ARCHITECTURE.md` for the build order.
+This build follows the phased plan in `ARCHITECTURE.md` §8 / the original spec's Section 12. **Phases 1–9 are complete and demo-able**: project scaffold, auth, RBAC, the shared data-table component, System Setup, Users & Roles, Sections, the full Student Information System core, Attendance + Timetable, Exams & Assessments, Syllabus/Schedule/Lesson Plans, the full Communication module across all four portals, Finance & Fees, Admissions & Certificates, Staff/HR + Transport + Hostel, and now the closing Student/Parent feature set (read-only Attendance, Exam Results, and Timetable views, the last three "Coming soon" placeholders on both dashboards). Phase 10 (the accessibility/security hardening pass) is not yet built — see `ARCHITECTURE.md` for the build order.
 
 ## Running locally
 
@@ -69,6 +69,14 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **Transport**: Vehicles (branch-scoped CRUD) and Routes & Stops, where a route's stops are edited as a dynamic per-row list (create/update/delete-diffed in one transaction, the same pattern as Exam↔ExamSubject from Phase 4). Deleting a stop or route is blocked with a friendly error if a student is still assigned to it, rather than a raw FK-constraint 500.
 - **Hostel**: Hostels (buildings, with an optional warden) and Rooms, with occupancy counts. Room capacity is enforced at assignment time (can't over-allot a room) and deletion is blocked while any student is still allotted.
 - **Student ↔ Transport/Hostel assignment lives on the Student Master detail page**, not as a separate bulk-mover screen — a compact "Transport" and "Hostel" card (visible only with `transport.routes`/`hostel.manage` EDIT permission) lets an admin assign one student to a route stop or hostel room, matching how `Section` assignment already lives directly on the `Student` record rather than a parallel assignment table.
+
+## What's built (Phase 9 adds)
+
+- **Student/Parent Attendance**: a month-by-month view (present/absent/late/half-day counts, percent-present badge, a `<ChartContainer>` bar chart, and a list of non-present days) with Previous/Next month navigation. Backed by a new `getStudentAttendanceSummary()` reading the same `Attendance` rows Admin/Teacher have marked since Phase 3 — no new data model needed.
+- **Student/Parent Exam Results**: every exam the student has at least one mark recorded for, with the full subject-wise breakdown, pass/fail per subject, and rank (when the exam counts toward rank) — reusing Phase 4's `getExamResultForStudent()` (originally built for the admin Progress Report print view) behind a new `listExamResultsForStudent()` that finds the relevant exams.
+- **Student/Parent Timetable**: a read-only weekly grid, reusing Phase 3's `getTimetableForSection()` directly — no separate read-only data path was needed since Student/Parent were always going to see the same timetable Admin/Teacher edit, just without the edit affordances.
+- **Both dashboards' "Coming soon" placeholder is gone** — replaced with a compact attendance-percent card next to the existing fee-status card, plus three new quick-link tiles (Attendance, Results, Timetable) alongside the existing four.
+- **Multi-child Parent pages keep the same "stack every child" pattern** Phase 5 already established for Homework, rather than introducing a tab/dropdown switcher — see Deliberate scope decisions below.
 
 ## What's built (Phase 2 adds)
 
@@ -163,6 +171,9 @@ Covers: RBAC permission logic, password hashing, table-parameter parsing (unit),
 - **Route/Room deletion and stop removal are guarded against orphaning a live assignment** (blocked with a friendly error, not a raw foreign-key 500) — the same anti-pattern fix applied proactively here that Phase 6 discovered reactively for duplicate-name crashes.
 - **Vehicles and Routes use a simple in-page list instead of the paginated `<DataTable>`** — at this school's scale (a handful of buses/routes, not hundreds), a full server-paginated table would be overhead without benefit; Staff Master kept `<DataTable>` since a school's total staff count is comparable to its student count.
 - **No dedicated Staff ID Card screen shipped this phase.** It wasn't one of the module keys scoped for Staff/HR (`hr.staff`, `hr.payroll`, `hr.attendance`) during Phase 1 planning; Phase 2's Student ID Cards print layout could be extended to staff in a v2 follow-up if needed.
+- **No multi-child tab/dropdown switcher was added for Parent.** The existing "stack every child, with a small name heading when there's more than one" pattern (already used by Homework since Phase 5 and the dashboard since Phase 1) was extended to Attendance, Results, and Timetable rather than introduced as a new UX paradigm — consistent, and adequate at the 1–3 children per family this school actually has. A switcher is a reasonable v2 upgrade if a deployment needs to scroll past many children routinely.
+- **The Attendance month-navigation (Previous/Next) is a single shared control for the whole Parent page**, not one per child — since every child's summary reads the same `?month=` URL param, moving it once moves every child's card together rather than needing N independent pickers.
+- **Attendance/Timetable/Results pages require no new permission-module checks** — like Homework and Fee Status before them, they scope data directly from the caller's own `session.studentId`/`session.guardianId` (never from a route param), so there's nothing to gate beyond the existing `requireRole("STUDENT"|"PARENT")` at the portal layout level.
 
 ## Open follow-ups for v2 (beyond later-phase feature work)
 

@@ -46,3 +46,23 @@ export async function getExamResultForStudent(examId: string, studentId: string)
   const results = await getExamResultsForSection(examId, student.sectionId);
   return results.find((r) => r.student.id === studentId) ?? null;
 }
+
+/** Every exam a student's section has been part of, with that student's own result if marks exist yet — for the Student/Parent results view. */
+export async function listExamResultsForStudent(studentId: string) {
+  const student = await db.student.findUnique({ where: { id: studentId } });
+  if (!student || !student.sectionId) return [];
+
+  const exams = await db.exam.findMany({
+    where: { branchId: student.branchId, subjects: { some: { marks: { some: { studentId } } } } },
+    include: { examType: true },
+    orderBy: { startDate: "desc" },
+  });
+
+  const results = await Promise.all(
+    exams.map(async (exam) => ({
+      exam,
+      result: await getExamResultForStudent(exam.id, studentId),
+    })),
+  );
+  return results.filter((r) => r.result);
+}
