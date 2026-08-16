@@ -7,7 +7,6 @@ import { Plus, Pencil } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormField } from "@/components/forms/form-field";
 import { createBranchAction, updateBranchAction } from "@/server/actions/branch-actions";
@@ -27,7 +26,6 @@ export function BranchFormDialog({
     city: string | null;
     address: string | null;
     phone: string | null;
-    isHostel: boolean;
     organizationId: string;
   };
 }) {
@@ -86,10 +84,6 @@ export function BranchFormDialog({
           <FormField id="branch-address" label="Address">
             <Input id="branch-address" name="address" defaultValue={branch?.address ?? ""} />
           </FormField>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <Checkbox name="isHostel" defaultChecked={branch?.isHostel} />
-            This branch has a hostel
-          </label>
 
           {state?.error && (
             <p role="alert" className="text-sm text-danger">

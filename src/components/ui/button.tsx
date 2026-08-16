@@ -4,15 +4,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100 [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        primary: "bg-primary text-primary-foreground hover:bg-primary-hover",
-        secondary: "bg-surface text-foreground border border-border hover:bg-background",
+        primary:
+          "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:bg-primary-hover hover:shadow-md hover:shadow-primary/30",
+        secondary:
+          "bg-surface text-foreground border border-border shadow-sm hover:border-primary/40 hover:bg-background hover:shadow-md",
         ghost: "text-foreground hover:bg-background",
-        danger: "bg-danger text-white hover:opacity-90",
-        gold: "bg-gold text-white hover:opacity-90",
+        danger: "bg-danger text-white shadow-sm shadow-danger/20 hover:opacity-90 hover:shadow-md hover:shadow-danger/30",
+        gold: "bg-gold-strong text-gold-foreground shadow-sm shadow-gold-strong/25 hover:opacity-90 hover:shadow-md hover:shadow-gold-strong/35",
       },
       size: {
         sm: "h-8 px-3 text-xs",

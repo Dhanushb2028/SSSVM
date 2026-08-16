@@ -18,7 +18,7 @@ export async function listExams(params: TableParams, scopeBranchId: string | nul
       where,
       orderBy,
       ...toPrismaSkipTake(params),
-      include: { branch: true, academicYear: true, examType: true, subjects: { include: { subject: true } } },
+      include: { branch: true, academicYear: true, examType: true, course: true, subjects: { include: { subject: true } } },
     }),
     db.exam.count({ where }),
   ]);
@@ -28,16 +28,17 @@ export async function listExams(params: TableParams, scopeBranchId: string | nul
 export async function getExamDetail(examId: string) {
   return db.exam.findUnique({
     where: { id: examId },
-    include: { subjects: { include: { subject: true } }, branch: true, academicYear: true, examType: true },
+    include: { subjects: { include: { subject: true } }, branch: true, academicYear: true, examType: true, course: true },
   });
 }
 
 export async function listExamPickerData(scopeBranchId: string | null) {
-  const [branches, academicYears, examTypes, subjects] = await Promise.all([
+  const [branches, academicYears, examTypes, subjects, courses] = await Promise.all([
     db.branch.findMany({ where: { deletedAt: null, ...(scopeBranchId ? { id: scopeBranchId } : {}) }, orderBy: { name: "asc" } }),
     db.academicYear.findMany({ where: { ...(scopeBranchId ? { branchId: scopeBranchId } : {}) }, orderBy: { startDate: "desc" } }),
     db.examType.findMany({ orderBy: { name: "asc" } }),
     db.subject.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } }),
+    db.course.findMany({ where: { deletedAt: null }, orderBy: { orderIndex: "asc" } }),
   ]);
-  return { branches, academicYears, examTypes, subjects };
+  return { branches, academicYears, examTypes, subjects, courses };
 }

@@ -77,9 +77,9 @@ export async function getStudentDetail(id: string) {
     include: {
       branch: true,
       section: { include: { course: true, academicYear: true } },
-      guardians: { include: { guardian: true } },
+      guardians: { include: { guardian: { include: { user: true } } } },
       routeStop: { include: { route: true } },
-      hostelRoom: { include: { hostel: true } },
+      user: true,
     },
   });
 }

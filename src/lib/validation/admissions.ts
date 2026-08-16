@@ -26,5 +26,5 @@ export const convertEnquirySchema = z.object({
   admissionNumber: z.string().trim().min(1, "Admission number is required"),
   dob: z.string().min(1, "Date of birth is required"),
   gender: z.enum(["MALE", "FEMALE", "OTHER"]),
-  sectionId: z.string().optional().or(z.literal("")),
+  sectionId: z.string().min(1, "Section is required — a student must be placed into a section to be enrolled"),
 });

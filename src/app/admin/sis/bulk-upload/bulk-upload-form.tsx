@@ -22,7 +22,7 @@ export function BulkUploadForm() {
         </a>
       </Button>
 
-      <form action={formAction} encType="multipart/form-data" className="flex flex-col gap-4">
+      <form action={formAction} className="flex flex-col gap-4">
         <FormField id="file" label="Student CSV file" required>
           <Input id="file" name="file" type="file" accept=".csv,text/csv" required />
         </FormField>

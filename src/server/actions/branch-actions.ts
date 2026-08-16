@@ -16,7 +16,6 @@ function toData(formData: FormData) {
     city: formData.get("city"),
     address: formData.get("address"),
     phone: formData.get("phone"),
-    isHostel: formData.get("isHostel") === "on",
   });
 }
 

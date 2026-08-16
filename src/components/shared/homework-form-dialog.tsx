@@ -28,7 +28,7 @@ export function HomeworkFormDialog({ sectionId, subjects }: { sectionId: string;
         </Button>
       </DialogTrigger>
       <DialogContent title="Post Homework">
-        <form action={formAction} encType="multipart/form-data" className="flex flex-col gap-4">
+        <form action={formAction} className="flex flex-col gap-4">
           <input type="hidden" name="sectionId" value={sectionId} />
           <input type="hidden" name="subjectId" value={subjectId} />
 

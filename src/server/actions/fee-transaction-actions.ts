@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac/permissions";
 import { assertBranchAccess } from "@/lib/rbac/scope";
@@ -14,6 +15,26 @@ async function nextReceiptNumber(branchId: string): Promise<string> {
   const year = new Date().getFullYear();
   const count = await db.feeTransaction.count({ where: { branchId } });
   return `RCPT-${year}-${String(count + 1).padStart(5, "0")}`;
+}
+
+/** Two concurrent payments can read the same count() and collide on receiptNumber —
+ * retry with a freshly recomputed number rather than losing the payment to an
+ * uncaught unique-constraint error. */
+async function createFeeTransactionWithRetry(
+  data: Omit<Prisma.FeeTransactionUncheckedCreateInput, "receiptNumber">,
+  branchId: string,
+  attempts = 3,
+) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const receiptNumber = await nextReceiptNumber(branchId);
+      return await db.feeTransaction.create({ data: { ...data, receiptNumber } });
+    } catch (e) {
+      const isReceiptClash = e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
+      if (!isReceiptClash || attempt === attempts) throw e;
+    }
+  }
+  throw new Error("Unreachable");
 }
 
 export async function createFeeTransactionAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -32,10 +53,8 @@ export async function createFeeTransactionAction(_prev: FormState, formData: For
   if (!student) return { error: "Student not found." };
   assertBranchAccess(session, student.branchId);
 
-  const receiptNumber = await nextReceiptNumber(student.branchId);
-  const transaction = await db.feeTransaction.create({
-    data: {
-      receiptNumber,
+  const transaction = await createFeeTransactionWithRetry(
+    {
       studentId: parsed.data.studentId,
       branchId: student.branchId,
       academicYearId: parsed.data.academicYearId,
@@ -45,7 +64,8 @@ export async function createFeeTransactionAction(_prev: FormState, formData: For
       remarks: parsed.data.remarks || null,
       collectedByUserId: session.userId,
     },
-  });
+    student.branchId,
+  );
 
   await recordAudit({ actorId: session.userId, action: "fee_transaction.create", entityType: "FeeTransaction", entityId: transaction.id });
   revalidatePath("/admin/finance/ledger");

@@ -33,6 +33,8 @@ export async function sendNotificationAction(_prev: FormState, formData: FormDat
   } else {
     if (!parsed.data.sectionId || !parsed.data.studentId) return { error: "Select a student." };
     await requireSectionActionAccess(session, parsed.data.sectionId, "comms.notifications");
+    const student = await db.student.findUnique({ where: { id: parsed.data.studentId }, select: { sectionId: true } });
+    if (!student || student.sectionId !== parsed.data.sectionId) return { error: "That student is not in the selected section." };
   }
 
   const notification = await db.notification.create({

@@ -38,7 +38,15 @@ export default async function StudentsPage({
           </Button>
         )}
       </div>
-      <StudentsTable rows={rows} totalCount={totalCount} params={params} courses={filterData.courses} sections={filterData.sections} />
+      <StudentsTable
+        rows={rows}
+        totalCount={totalCount}
+        params={params}
+        courses={filterData.courses}
+        sections={filterData.sections}
+        courseId={courseId}
+        sectionId={sectionId}
+      />
     </div>
   );
 }

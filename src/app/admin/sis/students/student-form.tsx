@@ -50,7 +50,7 @@ export function StudentForm({
   const toInputDate = (d: Date) => new Date(d).toISOString().slice(0, 10);
 
   return (
-    <form action={formAction} encType="multipart/form-data" className="flex flex-col gap-6">
+    <form action={formAction} className="flex flex-col gap-6">
       {mode === "edit" && <input type="hidden" name="id" value={student?.id} />}
       <input type="hidden" name="branchId" value={branchId} />
       <input type="hidden" name="sectionId" value={sectionId === NONE ? "" : sectionId} />

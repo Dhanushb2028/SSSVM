@@ -33,7 +33,7 @@ export async function listChattableStudents(scopeBranchId: string | null, sectio
     where: {
       status: "ACTIVE",
       deletedAt: null,
-      ...(sectionIds ? { sectionId: { in: sectionIds } } : scopeBranchId ? { branchId: scopeBranchId } : {}),
+      ...(sectionIds ? { sectionId: { in: sectionIds } } : { sectionId: { not: null }, ...(scopeBranchId ? { branchId: scopeBranchId } : {}) }),
     },
     orderBy: { firstName: "asc" },
     take: 500,

@@ -22,7 +22,7 @@ export function BulkUploadCbseForm() {
         </a>
       </Button>
 
-      <form action={formAction} encType="multipart/form-data" className="flex flex-col gap-4">
+      <form action={formAction} className="flex flex-col gap-4">
         <FormField id="cbse-file" label="CBSE data CSV file" required hint="Updates existing students, matched by admission number.">
           <Input id="cbse-file" name="file" type="file" accept=".csv,text/csv" required />
         </FormField>

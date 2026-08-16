@@ -12,7 +12,6 @@ import { FormField } from "@/components/forms/form-field";
 import { convertEnquiryAction } from "@/server/actions/enquiry-actions";
 
 type FormState = { error?: string; success?: boolean };
-const NONE = "__none__";
 
 export function ConvertEnquiryDialog({
   enquiryId,
@@ -26,7 +25,7 @@ export function ConvertEnquiryDialog({
   const [open, setOpen] = React.useState(false);
   const [state, formAction, pending] = useActionState<FormState, FormData>(convertEnquiryAction, {});
   const [gender, setGender] = React.useState("MALE");
-  const [sectionId, setSectionId] = React.useState(NONE);
+  const [sectionId, setSectionId] = React.useState(sections[0]?.id ?? "");
   useCloseOnSuccess(state, () => setOpen(false));
 
   return (
@@ -41,7 +40,7 @@ export function ConvertEnquiryDialog({
         <form action={formAction} className="flex flex-col gap-4">
           <input type="hidden" name="enquiryId" value={enquiryId} />
           <input type="hidden" name="gender" value={gender} />
-          <input type="hidden" name="sectionId" value={sectionId === NONE ? "" : sectionId} />
+          <input type="hidden" name="sectionId" value={sectionId} />
 
           <FormField id="conv-admno" label="Admission number" required>
             <Input id="conv-admno" name="admissionNumber" required />
@@ -62,13 +61,12 @@ export function ConvertEnquiryDialog({
             </SelectContent>
           </Select>
           <Select value={sectionId} onValueChange={setSectionId}>
-            <FormField id="conv-section" label="Section">
+            <FormField id="conv-section" label="Section" required hint="A student must be placed into a section to be enrolled">
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Select section" />
               </SelectTrigger>
             </FormField>
             <SelectContent>
-              <SelectItem value={NONE}>Unassigned</SelectItem>
               {sections.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
                   {s.course.name} - {s.name}
@@ -77,13 +75,17 @@ export function ConvertEnquiryDialog({
             </SelectContent>
           </Select>
 
+          {sections.length === 0 && (
+            <p className="text-sm text-danger">No sections exist for this branch yet. Create a section before converting.</p>
+          )}
+
           {state?.error && (
             <p role="alert" className="text-sm text-danger">
               {state.error}
             </p>
           )}
           <div className="flex justify-end">
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending || !sectionId}>
               {pending ? "Converting…" : "Convert"}
             </Button>
           </div>

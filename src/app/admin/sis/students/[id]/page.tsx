@@ -11,7 +11,8 @@ import { trashStudentAction } from "@/server/actions/student-actions";
 import { StudentForm } from "../student-form";
 import { GuardiansSection } from "./guardians-section";
 import { MarkLeftDialog } from "./mark-left-dialog";
-import { TransportSection, HostelSection } from "./transport-hostel-section";
+import { TransportSection } from "./transport-section";
+import { GenerateStudentLoginDialog } from "./generate-login-dialog";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requirePermissionOrRedirect("sis.students", "VIEW");
@@ -59,6 +60,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {!student.user && hasPermission(session, "sis.students", "EDIT") && (
+            <GenerateStudentLoginDialog
+              studentId={student.id}
+              suggestedUsername={`${student.firstName}.${student.lastName}`.toLowerCase().replace(/\s+/g, "")}
+            />
+          )}
           {student.status !== "LEFT" && hasPermission(session, "sis.outgoing", "EDIT") && (
             <MarkLeftDialog studentId={student.id} studentName={`${student.firstName} ${student.lastName}`} />
           )}
@@ -104,18 +111,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
             where: { route: { branchId: student.branchId, deletedAt: null } },
             include: { route: true },
             orderBy: { sequence: "asc" },
-          })}
-        />
-      )}
-
-      {hasPermission(session, "hostel.manage", "EDIT") && (
-        <HostelSection
-          studentId={student.id}
-          hostelRoomId={student.hostelRoomId}
-          hostelRooms={await db.hostelRoom.findMany({
-            where: { hostel: { branchId: student.branchId, deletedAt: null } },
-            include: { hostel: true },
-            orderBy: { roomNumber: "asc" },
           })}
         />
       )}

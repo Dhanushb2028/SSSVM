@@ -10,8 +10,10 @@ export async function GET(request: Request) {
     return toHttpResponse(e) ?? new Response("Error", { status: 500 });
   }
 
-  const q = new URL(request.url).searchParams.get("q") ?? "";
-  const rows = await listAllStaffForExport(q, session.branchId);
+  const searchParams = new URL(request.url).searchParams;
+  const q = searchParams.get("q") ?? "";
+  const status = searchParams.get("status") ?? undefined;
+  const rows = await listAllStaffForExport(q, session.branchId, status);
   return toCsvResponse(
     rows.map((r) => ({
       "Employee Code": r.employeeCode,

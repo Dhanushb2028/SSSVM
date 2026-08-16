@@ -26,6 +26,12 @@ async function hash(password: string) {
 async function main() {
   console.log("Seeding SSSVM demo data...");
 
+  const existing = await db.organization.findFirst({ where: { name: "Sree Siva Shankar Vidya Mandir" } });
+  if (existing) {
+    console.log("Seed data already present (organization exists) — skipping to avoid creating duplicates.");
+    return;
+  }
+
   const organization = await db.organization.create({
     data: { name: "Sree Siva Shankar Vidya Mandir" },
   });
@@ -37,7 +43,6 @@ async function main() {
       city: "K.R.M. Colony",
       address: "K.R.M. Colony",
       phone: "9000000000",
-      isHostel: false,
     },
   });
 
@@ -190,6 +195,9 @@ async function main() {
           lastName,
           dob: new Date(2015 - sectionIndex, i % 12, (i % 27) + 1),
           gender: globalIndex % 2 === 0 ? "MALE" : "FEMALE",
+          // Admitted at the start of the current academic year, staggered by a few days per
+          // student — realistic historical dates rather than falling back to today's date.
+          admissionDate: new Date(2025, 5, 2 + (globalIndex % 15)),
           contactPhone: isDemoStudentLogin ? "9222222222" : undefined,
           contactEmail: isDemoStudentLogin ? "student.demo@sssvm.example" : undefined,
         },
@@ -294,23 +302,11 @@ async function main() {
     data: { routeId: route.id, name: "Market Junction", pickupTime: "07:30 AM", sequence: 2 },
   });
 
-  // --- Hostel: one building, a couple of rooms ---
-  const hostel = await db.hostel.create({
-    data: { branchId: branch.id, name: "Boys Hostel Block A", wardenId: accountant.id },
-  });
-  const room101 = await db.hostelRoom.create({
-    data: { hostelId: hostel.id, roomNumber: "101", capacity: 4 },
-  });
-  await db.hostelRoom.create({
-    data: { hostelId: hostel.id, roomNumber: "102", capacity: 4 },
-  });
-
-  const [transportStudent, hostelStudent] = await db.student.findMany({
+  const [transportStudent] = await db.student.findMany({
     where: { admissionNumber: { in: ["SSSVM2025-001", "SSSVM2025-002"] } },
     orderBy: { admissionNumber: "asc" },
   });
   if (transportStudent) await db.student.update({ where: { id: transportStudent.id }, data: { routeStopId: stop1.id } });
-  if (hostelStudent) await db.student.update({ where: { id: hostelStudent.id }, data: { hostelRoomId: room101.id } });
 
   console.log("Seed complete.");
   console.log("");

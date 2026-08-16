@@ -46,9 +46,15 @@ export async function updateSyllabusTopicAction(_prev: FormState, formData: Form
   const session = await getSession();
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Missing topic id" };
+  const existing = await db.syllabusTopic.findUnique({ where: { id }, select: { sectionId: true } });
+  if (!existing) return { error: "Topic not found." };
+  await requireSectionActionAccess(session, existing.sectionId, "academics.syllabus");
+
   const parsed = toData(formData);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
-  await requireSectionActionAccess(session, parsed.data.sectionId, "academics.syllabus");
+  if (parsed.data.sectionId !== existing.sectionId) {
+    await requireSectionActionAccess(session, parsed.data.sectionId, "academics.syllabus");
+  }
 
   await db.syllabusTopic.update({
     where: { id },

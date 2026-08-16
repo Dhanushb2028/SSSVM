@@ -28,7 +28,7 @@ export function BannerFormDialog({ branches }: { branches: { id: string; name: s
         </Button>
       </DialogTrigger>
       <DialogContent title="Add Home Banner">
-        <form action={formAction} encType="multipart/form-data" className="flex flex-col gap-4">
+        <form action={formAction} className="flex flex-col gap-4">
           <input type="hidden" name="branchId" value={branchId} />
           <Select value={branchId} onValueChange={setBranchId}>
             <FormField id="banner-branch" label="Branch" required>

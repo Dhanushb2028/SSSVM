@@ -20,6 +20,7 @@ type PickerData = {
   academicYears: { id: string; name: string; branchId: string }[];
   examTypes: { id: string; name: string }[];
   subjects: { id: string; name: string }[];
+  courses: { id: string; name: string }[];
 };
 
 export function ExamForm({
@@ -35,6 +36,7 @@ export function ExamForm({
     branchId: string;
     academicYearId: string;
     examTypeId: string;
+    courseId: string;
     startDate: Date;
     endDate: Date;
     includeInRank: boolean;
@@ -47,6 +49,7 @@ export function ExamForm({
   const [branchId, setBranchId] = React.useState(exam?.branchId ?? picker.branches[0]?.id ?? "");
   const [academicYearId, setAcademicYearId] = React.useState(exam?.academicYearId ?? "");
   const [examTypeId, setExamTypeId] = React.useState(exam?.examTypeId ?? picker.examTypes[0]?.id ?? "");
+  const [courseId, setCourseId] = React.useState(exam?.courseId ?? picker.courses[0]?.id ?? "");
   const [rows, setRows] = React.useState<SubjectRow[]>(
     exam
       ? exam.subjects.map((s) => ({
@@ -76,6 +79,7 @@ export function ExamForm({
       <input type="hidden" name="branchId" value={branchId} />
       <input type="hidden" name="academicYearId" value={academicYearId} />
       <input type="hidden" name="examTypeId" value={examTypeId} />
+      <input type="hidden" name="courseId" value={courseId} />
       <input type="hidden" name="subjects" value={subjectsJson} />
 
       <Card>
@@ -86,6 +90,21 @@ export function ExamForm({
           <FormField id="exam-name" label="Exam name" required>
             <Input id="exam-name" name="name" required defaultValue={exam?.name} />
           </FormField>
+
+          <Select value={courseId} onValueChange={setCourseId}>
+            <FormField id="exam-course" label="Grade" required hint="Only sections in this grade can have marks entered against this exam">
+              <SelectTrigger>
+                <SelectValue placeholder="Select grade" />
+              </SelectTrigger>
+            </FormField>
+            <SelectContent>
+              {picker.courses.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <Select value={examTypeId} onValueChange={setExamTypeId}>
             <FormField id="exam-type" label="Exam type" required>

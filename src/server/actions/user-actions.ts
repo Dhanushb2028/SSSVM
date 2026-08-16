@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac/permissions";
+import { assertBranchAccess } from "@/lib/rbac/scope";
 import { hashPassword } from "@/lib/auth/password";
 import { destroyAllSessionsForUser } from "@/lib/auth/session";
 import { createAdminUserSchema, updateAdminUserSchema, resetPasswordSchema } from "@/lib/validation/users";
@@ -21,6 +22,12 @@ export async function createAdminUserAction(_prev: FormState, formData: FormData
     permissionProfileId: formData.get("permissionProfileId"),
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+
+  // A branch-scoped admin may only create accounts within their own branch — otherwise
+  // they could hand out an org-wide account by leaving branchId blank.
+  if (session.branchId && (parsed.data.branchId || "") !== session.branchId) {
+    return { error: "You can only create accounts for your own branch." };
+  }
 
   const existing = await db.user.findUnique({ where: { username: parsed.data.username } });
   if (existing) return { error: "That username is already taken." };
@@ -48,6 +55,10 @@ export async function updateAdminUserAction(_prev: FormState, formData: FormData
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Missing user id" };
 
+  const existing = await db.user.findUnique({ where: { id }, select: { branchId: true } });
+  if (!existing) return { error: "User not found." };
+  assertBranchAccess(session, existing.branchId ?? "");
+
   const parsed = updateAdminUserSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
@@ -55,6 +66,12 @@ export async function updateAdminUserAction(_prev: FormState, formData: FormData
     permissionProfileId: formData.get("permissionProfileId"),
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+
+  // Same rule as create: a branch-scoped admin can't move a user to another branch
+  // or clear branchId to grant them org-wide access.
+  if (session.branchId && (parsed.data.branchId || "") !== session.branchId) {
+    return { error: "You can only assign accounts to your own branch." };
+  }
 
   await db.user.update({
     where: { id },
@@ -79,6 +96,7 @@ export async function toggleUserActiveAction(_prev: FormState, formData: FormDat
 
   const target = await db.user.findUnique({ where: { id } });
   if (!target) return { error: "User not found." };
+  assertBranchAccess(session, target.branchId ?? "");
 
   const nextActive = !target.isActive;
   await db.user.update({ where: { id }, data: { isActive: nextActive } });
@@ -100,6 +118,10 @@ export async function resetUserPasswordAction(_prev: FormState, formData: FormDa
   const parsed = resetPasswordSchema.safeParse({ newPassword: formData.get("newPassword") });
   if (!id) return { error: "Missing user id" };
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+
+  const target = await db.user.findUnique({ where: { id }, select: { branchId: true } });
+  if (!target) return { error: "User not found." };
+  assertBranchAccess(session, target.branchId ?? "");
 
   const passwordHash = await hashPassword(parsed.data.newPassword);
   await db.user.update({ where: { id }, data: { passwordHash } });

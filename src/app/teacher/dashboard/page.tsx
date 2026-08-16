@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,20 +66,6 @@ export default async function TeacherDashboardPage() {
               You are not assigned as class teacher for any section yet.
             </p>
           )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Coming soon</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-start gap-2 text-sm text-muted-foreground">
-          {markedSectionIds.size === sectionIds.length && sectionIds.length > 0 ? (
-            <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-success" />
-          ) : (
-            <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-warning" />
-          )}
-          <p>Homework, marks entry, and communication tools for your sections and subjects arrive in later phases.</p>
         </CardContent>
       </Card>
     </div>

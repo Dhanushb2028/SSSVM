@@ -11,6 +11,7 @@ export async function listTcStudents(
   const where = {
     status: "ACTIVE" as const,
     deletedAt: null,
+    sectionId: { not: null },
     tcEligible: true,
     tcIssued: filters.issued,
     ...(scopeBranchId ? { branchId: scopeBranchId } : {}),

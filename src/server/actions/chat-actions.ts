@@ -49,7 +49,7 @@ export async function sendChatMessageAction(_prev: FormState, formData: FormData
 
   revalidatePath(`/admin/chat/${studentId}`);
   revalidatePath(`/teacher/chat/${studentId}`);
-  revalidatePath("/student/chat");
-  revalidatePath("/parent/chat");
+  revalidatePath("/student/messages");
+  revalidatePath("/parent/messages");
   return { success: true };
 }

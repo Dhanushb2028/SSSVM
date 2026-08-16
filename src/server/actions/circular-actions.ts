@@ -19,15 +19,22 @@ export async function createCircularAction(_prev: FormState, formData: FormData)
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
 
+  // The section's own branch is the source of truth for which branch this circular belongs
+  // to — never the client-supplied branchId field, which could otherwise be set to a
+  // different branch than the section actually being granted access to above.
+  let branchId = parsed.data.branchId;
   if (parsed.data.sectionId) {
     await requireSectionActionAccess(session, parsed.data.sectionId, "comms.circulars");
+    const section = await db.section.findUnique({ where: { id: parsed.data.sectionId }, select: { branchId: true } });
+    if (!section) return { error: "Section not found." };
+    branchId = section.branchId;
   } else {
     await requireBranchActionAccess(session, parsed.data.branchId, "comms.circulars");
   }
 
   const circular = await db.circular.create({
     data: {
-      branchId: parsed.data.branchId,
+      branchId,
       title: parsed.data.title,
       body: parsed.data.body,
       sectionId: parsed.data.sectionId || null,

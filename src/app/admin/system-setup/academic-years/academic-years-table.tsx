@@ -2,12 +2,12 @@
 
 import { type ColumnDef } from "@tanstack/react-table";
 import { Trash2 } from "lucide-react";
-import { format } from "date-fns";
 import { DataTable } from "@/components/data-table/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import type { TableParams } from "@/lib/data-table/params";
+import { formatDateOnly } from "@/lib/date";
 import { deleteAcademicYearAction } from "@/server/actions/academic-year-actions";
 import { AcademicYearFormDialog } from "./academic-year-form-dialog";
 
@@ -28,7 +28,7 @@ function makeColumns(branches: { id: string; name: string }[]): ColumnDef<Academ
     {
       id: "range",
       header: "Date range",
-      cell: ({ row }) => `${format(row.original.startDate, "d MMM yyyy")} – ${format(row.original.endDate, "d MMM yyyy")}`,
+      cell: ({ row }) => `${formatDateOnly(row.original.startDate, "d MMM yyyy")} – ${formatDateOnly(row.original.endDate, "d MMM yyyy")}`,
     },
     {
       id: "isCurrent",

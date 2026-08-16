@@ -30,8 +30,17 @@ export async function saveExamMarksAction(_prev: FormState, formData: FormData):
 
   await requireSectionActionAccess(session, parsed.data.sectionId, "exams.marks");
 
-  const examSubject = await db.examSubject.findUnique({ where: { id: parsed.data.examSubjectId } });
+  const examSubject = await db.examSubject.findUnique({ where: { id: parsed.data.examSubjectId }, include: { exam: true } });
   if (!examSubject) return { error: "Exam subject not found." };
+
+  const section = await db.section.findUnique({ where: { id: parsed.data.sectionId }, select: { courseId: true } });
+  if (!section || section.courseId !== examSubject.exam.courseId) {
+    return { error: "This section is not in the exam's grade — marks cannot be entered against the wrong grade's roster." };
+  }
+
+  const studentIds = parsed.data.records.map((r) => r.studentId);
+  const enrolledCount = await db.student.count({ where: { id: { in: studentIds }, sectionId: parsed.data.sectionId } });
+  if (enrolledCount !== studentIds.length) return { error: "One or more students are not in this section." };
 
   const overMax = parsed.data.records.filter((r) => r.marksObtained > examSubject.maxMarks);
   if (overMax.length > 0) {

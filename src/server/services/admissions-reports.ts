@@ -2,6 +2,9 @@ import "server-only";
 import { db } from "@/lib/db";
 
 export async function getAdmissionsReport(branchId: string, dateFrom?: string, dateTo?: string) {
+  // dateTo is a plain YYYY-MM-DD from a date input, which parses to midnight UTC — add a day
+  // and use an exclusive upper bound so the entire final day is actually included.
+  const dateToExclusive = dateTo ? new Date(new Date(dateTo).getTime() + 24 * 60 * 60 * 1000) : undefined;
   const where = {
     branchId,
     status: "ADMITTED" as const,
@@ -9,7 +12,7 @@ export async function getAdmissionsReport(branchId: string, dateFrom?: string, d
       ? {
           updatedAt: {
             ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
-            ...(dateTo ? { lte: new Date(dateTo) } : {}),
+            ...(dateToExclusive ? { lt: dateToExclusive } : {}),
           },
         }
       : {}),

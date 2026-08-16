@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#1e3a8a",
+  themeColor: "#123a8a",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -31,6 +31,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <script
+          // Runs before paint so the saved theme applies with no flash of the other theme.
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('sssvm-theme')==='classic'){document.documentElement.setAttribute('data-theme','classic')}}catch(e){}",
+          }}
+        />
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>

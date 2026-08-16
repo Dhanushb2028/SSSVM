@@ -5,9 +5,10 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/rbac/permissions";
 import { assertBranchAccess } from "@/lib/rbac/scope";
-import { studentSchema, guardianLinkSchema } from "@/lib/validation/students";
+import { studentSchema, guardianLinkSchema, generateStudentLoginSchema, generateGuardianLoginSchema } from "@/lib/validation/students";
 import { recordAudit } from "@/server/services/audit";
 import { getStorageProvider, StorageValidationError } from "@/lib/storage/provider";
+import { hashPassword } from "@/lib/auth/password";
 
 type FormState = { error?: string; success?: boolean };
 
@@ -247,5 +248,53 @@ export async function unlinkGuardianAction(_prev: FormState, formData: FormData)
   await db.studentGuardian.delete({ where: { studentId_guardianId: { studentId, guardianId } } });
   await recordAudit({ actorId: session.userId, action: "student.unlink_guardian", entityType: "Student", entityId: studentId });
   revalidatePath(`/admin/sis/students/${studentId}`);
+  return { success: true };
+}
+
+export async function generateStudentLoginAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await requirePermission("sis.students", "EDIT");
+  const parsed = generateStudentLoginSchema.safeParse({
+    studentId: formData.get("studentId"),
+    username: formData.get("username"),
+    password: formData.get("password"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+
+  const student = await db.student.findUnique({ where: { id: parsed.data.studentId }, include: { user: true } });
+  if (!student) return { error: "Student not found." };
+  assertBranchAccess(session, student.branchId);
+  if (student.user) return { error: "This student already has a login." };
+
+  const usernameClash = await db.user.findUnique({ where: { username: parsed.data.username } });
+  if (usernameClash) return { error: "That username is already taken." };
+
+  const passwordHash = await hashPassword(parsed.data.password);
+  await db.user.create({
+    data: { role: "STUDENT", username: parsed.data.username, passwordHash, branchId: student.branchId, studentId: student.id },
+  });
+  await recordAudit({ actorId: session.userId, action: "student.generate_login", entityType: "Student", entityId: student.id });
+  revalidatePath(`/admin/sis/students/${student.id}`);
+  return { success: true };
+}
+
+export async function generateGuardianLoginAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await requirePermission("sis.students", "EDIT");
+  const parsed = generateGuardianLoginSchema.safeParse({
+    guardianId: formData.get("guardianId"),
+    studentId: formData.get("studentId"),
+    password: formData.get("password"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+
+  const guardian = await db.guardian.findUnique({ where: { id: parsed.data.guardianId }, include: { user: true } });
+  if (!guardian) return { error: "Guardian not found." };
+  if (guardian.user) return { error: "This guardian already has a login." };
+
+  const passwordHash = await hashPassword(parsed.data.password);
+  await db.user.create({
+    data: { role: "PARENT", mobile: guardian.phone, passwordHash, guardianId: guardian.id },
+  });
+  await recordAudit({ actorId: session.userId, action: "guardian.generate_login", entityType: "Guardian", entityId: guardian.id });
+  revalidatePath(`/admin/sis/students/${parsed.data.studentId}`);
   return { success: true };
 }

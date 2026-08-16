@@ -24,7 +24,7 @@ export function HomeworkSubmitDialog({ homeworkId, alreadySubmitted }: { homewor
         </Button>
       </DialogTrigger>
       <DialogContent title="Submit Homework">
-        <form action={formAction} encType="multipart/form-data" className="flex flex-col gap-4">
+        <form action={formAction} className="flex flex-col gap-4">
           <input type="hidden" name="homeworkId" value={homeworkId} />
           <FormField id="submit-file" label="File">
             <Input id="submit-file" name="attachment" type="file" />

@@ -115,10 +115,6 @@ export const MODULE_GROUPS = [
     ],
   },
   {
-    group: "Hostel",
-    modules: [{ key: "hostel.manage", label: "Hostel" }],
-  },
-  {
     group: "Certificates",
     modules: [{ key: "certificates.tc", label: "Transfer Certificates" }],
   },

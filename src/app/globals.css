@@ -1,20 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  /* SSSVM brand palette, derived from the school crest: royal blue primary,
-     gold accent, green/red used sparingly as status colors only (Section 2).
-     All pairings below meet WCAG AA (4.5:1 body text / 3:1 large text & UI). */
-  --background: #f8fafc;
-  --surface: #ffffff;
+  /* SSSVM brand palette, derived from the school crest: royal blue + gold.
+     Surfaces use a soft blue-violet tint (never plain white/gray) so cards,
+     dialogs, and empty space read as part of the brand instead of stock white.
+     Gold is a full secondary color (not just a status accent) — used for
+     active states, highlights, and hero treatments alongside blue. Green/red
+     remain dedicated status colors. All pairings below meet WCAG AA
+     (4.5:1 body text / 3:1 large text & UI). */
+  --background: #eef1fc;
+  --surface: #f5f2ff;
   --foreground: #0f172a;
   --muted-foreground: #475569;
-  --border: #e2e8f0;
+  --border: #d9d5f7;
 
-  --primary: #1e3a8a; /* royal blue */
-  --primary-hover: #1e40af;
+  --primary: #123a8a; /* royal blue */
+  --primary-hover: #1447cf; /* brighter on hover/active for richer feedback */
+  --primary-soft: #dbe7ff; /* light blue tint for badges/active backgrounds */
   --primary-foreground: #ffffff;
 
-  --gold: #b45309; /* accessible on white; use --gold-soft for large fills */
+  --gold: #b45309; /* accessible on white; use for text/icons/links */
+  --gold-strong: #f59e0b; /* rich solid fill — pair with --gold-foreground */
   --gold-soft: #fef3c7;
   --gold-foreground: #422006;
 
@@ -25,8 +31,34 @@
   --warning: #a16207;
   --warning-soft: #fef9c3;
 
-  --ring: #1e3a8a;
-  --radius: 0.5rem;
+  --hero-gradient: linear-gradient(135deg, #0c2c72 0%, #123a8a 45%, #1a4fd6 100%);
+
+  --ring: #123a8a;
+  --radius: 0.75rem;
+
+  /* "Vivid" theme (default): tokens for anything painted on the colorful
+     .bg-app-gradient canvas (sidebar, login side panel) — white-based, since
+     that canvas is a dark blue->gold gradient. --header-bg is the translucent
+     glass strip the top header uses so it reads as part of the same canvas
+     instead of a hard white seam. Switched by ThemeToggle via [data-theme]. */
+  --on-canvas: #ffffff;
+  --on-canvas-muted: rgba(255, 255, 255, 0.75);
+  --on-canvas-hover: rgba(255, 255, 255, 0.12);
+  --on-canvas-border: rgba(255, 255, 255, 0.22);
+  --on-canvas-active: var(--gold-strong);
+  --header-bg: rgba(255, 255, 255, 0.82);
+}
+
+/* "Classic" theme: the original flat, low-color surfaces — for users who find
+   the vivid gradient too busy. Picked via the ThemeToggle (login page and
+   sidebar footer), persisted in localStorage, applied as data-theme on <html>. */
+[data-theme="classic"] {
+  --on-canvas: var(--foreground);
+  --on-canvas-muted: var(--muted-foreground);
+  --on-canvas-hover: var(--background);
+  --on-canvas-border: var(--border);
+  --on-canvas-active: var(--primary);
+  --header-bg: var(--surface);
 }
 
 @theme inline {
@@ -38,9 +70,11 @@
 
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
   --color-primary-foreground: var(--primary-foreground);
 
   --color-gold: var(--gold);
+  --color-gold-strong: var(--gold-strong);
   --color-gold-soft: var(--gold-soft);
   --color-gold-foreground: var(--gold-foreground);
 
@@ -61,8 +95,43 @@
   border-color: var(--border);
 }
 
+/* Techy blue -> gold diagonal wash, with a faint circuit-style grid on top,
+   so page canvases read as a designed surface instead of blank white.
+   Applied to body and to any full-viewport content canvas via .bg-app-gradient
+   (e.g. the dashboard <main> in sidebar-shell.tsx, shared by every portal). */
+.bg-app-gradient,
 body {
-  background: var(--background);
+  background-color: #0f2568;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px,
+      transparent 48px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px,
+      transparent 48px
+    ),
+    radial-gradient(circle at 15% 10%, rgba(56, 118, 255, 0.55) 0%, transparent 55%),
+    radial-gradient(circle at 90% 90%, rgba(245, 158, 11, 0.5) 0%, transparent 50%),
+    linear-gradient(135deg, #0b1f4d 0%, #123a8a 30%, #1a56e8 55%, #2f7be0 70%, #f5b93d 90%, #f59e0b 100%);
+  background-attachment: fixed;
+  background-size: 48px 48px, 48px 48px, cover, cover, cover;
+}
+
+[data-theme="classic"] .bg-app-gradient,
+[data-theme="classic"] body {
+  background-color: var(--background);
+  background-image: none;
+  background-attachment: initial;
+}
+
+body {
   color: var(--foreground);
 }
 

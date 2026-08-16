@@ -47,13 +47,74 @@ export async function getExamResultForStudent(examId: string, studentId: string)
   return results.find((r) => r.student.id === studentId) ?? null;
 }
 
+/**
+ * Average % scored per exam, broken out by course (i.e. "Grade 5", "Grade 6" — the
+ * class/category grouping above individual sections) — the data for the grade-trend
+ * line chart on the Result Reports page. One row per exam, one numeric field per
+ * course, pre-pivoted into the shape recharts' <Line> needs (dataKey = course name).
+ */
+export async function getGradeTrends(branchId: string | null) {
+  const exams = await db.exam.findMany({
+    where: { deletedAt: null, ...(branchId ? { branchId } : {}) },
+    orderBy: { startDate: "asc" },
+  });
+  if (exams.length === 0) return { rows: [], courseNames: [] };
+
+  const [examSubjects, sections, marks] = await Promise.all([
+    db.examSubject.findMany({ where: { examId: { in: exams.map((e) => e.id) } } }),
+    db.section.findMany({ where: { deletedAt: null, ...(branchId ? { branchId } : {}) }, include: { course: true } }),
+    db.examMark.findMany({
+      where: { examSubject: { examId: { in: exams.map((e) => e.id) } } },
+      include: { student: { select: { sectionId: true } } },
+    }),
+  ]);
+
+  const maxMarksByExamSubject = new Map(examSubjects.map((es) => [es.id, es.maxMarks]));
+  const examIdByExamSubject = new Map(examSubjects.map((es) => [es.id, es.examId]));
+  const courseBySection = new Map(sections.map((s) => [s.id, s.course]));
+
+  // examId -> courseName -> running totals
+  const totals = new Map<string, Map<string, { obtained: number; max: number }>>();
+  for (const mark of marks) {
+    const examId = examIdByExamSubject.get(mark.examSubjectId);
+    const maxMarks = maxMarksByExamSubject.get(mark.examSubjectId);
+    const course = mark.student.sectionId ? courseBySection.get(mark.student.sectionId) : undefined;
+    if (!examId || maxMarks === undefined || !course) continue;
+
+    if (!totals.has(examId)) totals.set(examId, new Map());
+    const byCourse = totals.get(examId)!;
+    const entry = byCourse.get(course.name) ?? { obtained: 0, max: 0 };
+    entry.obtained += mark.marksObtained;
+    entry.max += maxMarks;
+    byCourse.set(course.name, entry);
+  }
+
+  const courseNames = Array.from(new Set(sections.map((s) => s.course.name))).sort();
+
+  const rows = exams.map((exam) => {
+    const row: { examId: string; examName: string; startDate: Date } & Record<string, number | string | Date> = {
+      examId: exam.id,
+      examName: exam.name,
+      startDate: exam.startDate,
+    };
+    const byCourse = totals.get(exam.id);
+    for (const courseName of courseNames) {
+      const entry = byCourse?.get(courseName);
+      if (entry && entry.max > 0) row[courseName] = Math.round((entry.obtained / entry.max) * 1000) / 10;
+    }
+    return row;
+  });
+
+  return { rows, courseNames };
+}
+
 /** Every exam a student's section has been part of, with that student's own result if marks exist yet — for the Student/Parent results view. */
 export async function listExamResultsForStudent(studentId: string) {
   const student = await db.student.findUnique({ where: { id: studentId } });
   if (!student || !student.sectionId) return [];
 
   const exams = await db.exam.findMany({
-    where: { branchId: student.branchId, subjects: { some: { marks: { some: { studentId } } } } },
+    where: { branchId: student.branchId, deletedAt: null, subjects: { some: { marks: { some: { studentId } } } } },
     include: { examType: true },
     orderBy: { startDate: "desc" },
   });

@@ -14,7 +14,7 @@ const QUICK_LINKS = [
   { label: "Notifications", href: "/student/notifications", icon: Bell },
   { label: "Gallery", href: "/student/gallery", icon: ImageIcon },
   { label: "Videos", href: "/student/videos", icon: Video },
-  { label: "Chat", href: "/student/chat", icon: MessageCircle },
+  { label: "Messages", href: "/student/messages", icon: MessageCircle },
 ];
 
 export default async function StudentDashboardPage() {

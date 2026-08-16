@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { randomBytes, createHash } from "node:crypto";
 import { db } from "@/lib/db";
@@ -67,7 +68,10 @@ function displayNameFor(user: {
   return user.name ?? user.username ?? "Admin";
 }
 
-export async function getSession(): Promise<AppSession | null> {
+/** Wrapped in React's per-request cache — this is called from many layouts/pages/components
+ * on a single render, and each call was a full DB round trip (session + user + role-linked
+ * record + permission grants) before this was added. */
+export const getSession = cache(async (): Promise<AppSession | null> => {
   const store = await cookies();
   const token = store.get(COOKIE_NAME)?.value;
   if (!token) return null;
@@ -108,7 +112,7 @@ export async function getSession(): Promise<AppSession | null> {
     permissionGrants:
       user.permissionProfile?.grants.map((g) => ({ module: g.module, action: g.action })) ?? [],
   };
-}
+});
 
 export async function destroySession(): Promise<void> {
   const store = await cookies();

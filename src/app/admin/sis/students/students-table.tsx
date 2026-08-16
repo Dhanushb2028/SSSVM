@@ -54,13 +54,21 @@ export function StudentsTable({
   params,
   courses,
   sections,
+  courseId,
+  sectionId,
 }: {
   rows: StudentRow[];
   totalCount: number;
   params: TableParams;
   courses: { id: string; name: string }[];
   sections: { id: string; name: string; course: { name: string } }[];
+  courseId?: string;
+  sectionId?: string;
 }) {
+  const exportParams = new URLSearchParams({ q: params.q });
+  if (courseId) exportParams.set("courseId", courseId);
+  if (sectionId) exportParams.set("sectionId", sectionId);
+
   return (
     <DataTable
       caption="Students"
@@ -68,7 +76,7 @@ export function StudentsTable({
       data={rows}
       totalCount={totalCount}
       params={params}
-      exportHref={`/admin/sis/students/export?${new URLSearchParams({ q: params.q }).toString()}`}
+      exportHref={`/admin/sis/students/export?${exportParams.toString()}`}
       searchPlaceholder="Search by name or admission number…"
       emptyMessage="No students found."
       toolbarExtra={

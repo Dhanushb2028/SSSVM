@@ -9,7 +9,7 @@ import { deleteAlbumAction } from "@/server/actions/gallery-actions";
 import { AlbumFormDialog } from "@/components/shared/album-form-dialog";
 import { basePathFor } from "@/lib/portal-path";
 
-async function resolveBranchId(session: NonNullable<Awaited<ReturnType<typeof getSession>>> | null): Promise<string | null> {
+export async function resolveGalleryBranchId(session: NonNullable<Awaited<ReturnType<typeof getSession>>> | null): Promise<string | null> {
   if (!session) return null;
   if (session.role === "ADMIN") {
     if (session.branchId) return session.branchId;
@@ -33,7 +33,7 @@ async function resolveBranchId(session: NonNullable<Awaited<ReturnType<typeof ge
 
 export async function GalleryPageContent({ portal }: { portal: "admin" | "teacher" | "student" | "parent" }) {
   const session = await getSession();
-  const branchId = await resolveBranchId(session);
+  const branchId = await resolveGalleryBranchId(session);
   const canManage = portal === "admin" || portal === "teacher";
   const albums = branchId
     ? await db.galleryAlbum.findMany({ where: { branchId }, include: { _count: { select: { items: true } } }, orderBy: { createdAt: "desc" } })

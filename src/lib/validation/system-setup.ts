@@ -10,7 +10,6 @@ export const branchSchema = z.object({
   city: z.string().trim().optional().or(z.literal("")),
   address: z.string().trim().optional().or(z.literal("")),
   phone: z.string().trim().optional().or(z.literal("")),
-  isHostel: z.coerce.boolean().optional(),
 });
 
 export const academicYearSchema = z

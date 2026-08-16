@@ -36,7 +36,7 @@ export default async function StaffPage({
           ]}
         />
       </div>
-      <StaffTable rows={rows} totalCount={totalCount} params={params} branches={branches} />
+      <StaffTable rows={rows} totalCount={totalCount} params={params} branches={branches} status={status} />
     </div>
   );
 }

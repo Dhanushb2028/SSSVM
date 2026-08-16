@@ -20,12 +20,14 @@ export type ExamRow = {
   branch: { name: string };
   academicYear: { name: string };
   examType: { name: string };
+  course: { name: string };
   subjects: { subject: { name: string } }[];
 };
 
 const columns: ColumnDef<ExamRow, unknown>[] = [
   { accessorKey: "name", header: "Name" },
   { id: "type", header: "Type", cell: ({ row }) => row.original.examType.name },
+  { id: "grade", header: "Grade", cell: ({ row }) => row.original.course.name },
   { id: "branch", header: "Branch", cell: ({ row }) => row.original.branch.name },
   { id: "year", header: "Year", cell: ({ row }) => row.original.academicYear.name },
   {

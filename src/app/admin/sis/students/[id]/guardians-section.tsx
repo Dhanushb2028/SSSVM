@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useActionState } from "react";
-import { Plus, Trash2, Star } from "lucide-react";
+import { Plus, Trash2, Star, KeyRound } from "lucide-react";
 import { useCloseOnSuccess } from "@/lib/hooks/use-close-on-success";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -12,15 +12,53 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormField } from "@/components/forms/form-field";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { linkGuardianAction, unlinkGuardianAction } from "@/server/actions/student-actions";
+import { linkGuardianAction, unlinkGuardianAction, generateGuardianLoginAction } from "@/server/actions/student-actions";
 
 type FormState = { error?: string; success?: boolean };
 
 type GuardianLink = {
-  guardian: { id: string; firstName: string; lastName: string; phone: string; email: string | null };
+  guardian: { id: string; firstName: string; lastName: string; phone: string; email: string | null; user?: { id: string } | null };
   relationship: string;
   isPrimary: boolean;
 };
+
+function GenerateGuardianLoginDialog({ studentId, guardianId, guardianName, mobile }: { studentId: string; guardianId: string; guardianName: string; mobile: string }) {
+  const [open, setOpen] = React.useState(false);
+  const [state, formAction, pending] = useActionState<FormState, FormData>(generateGuardianLoginAction, {});
+  useCloseOnSuccess(state, () => setOpen(false));
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" aria-label={`Generate login for ${guardianName}`}>
+          <KeyRound aria-hidden="true" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent
+        title="Generate Login"
+        description={`Creates a Parent portal login for ${guardianName}, using their mobile number ${mobile} to sign in.`}
+      >
+        <form action={formAction} className="flex flex-col gap-4">
+          <input type="hidden" name="studentId" value={studentId} />
+          <input type="hidden" name="guardianId" value={guardianId} />
+          <FormField id="guardian-login-password" label="Initial password" required hint="At least 8 characters.">
+            <Input id="guardian-login-password" name="password" type="text" required minLength={8} />
+          </FormField>
+          {state?.error && (
+            <p role="alert" className="text-sm text-danger">
+              {state.error}
+            </p>
+          )}
+          <div className="flex justify-end">
+            <Button type="submit" disabled={pending}>
+              {pending ? "Creating…" : "Create Login"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function AddGuardianDialog({ studentId }: { studentId: string }) {
   const [open, setOpen] = React.useState(false);
@@ -116,7 +154,16 @@ export function GuardiansSection({ studentId, links }: { studentId: string; link
                     {link.guardian.email ? ` · ${link.guardian.email}` : ""}
                   </p>
                 </div>
-                <ConfirmDialog
+                <div className="flex items-center">
+                  {!link.guardian.user && (
+                    <GenerateGuardianLoginDialog
+                      studentId={studentId}
+                      guardianId={link.guardian.id}
+                      guardianName={`${link.guardian.firstName} ${link.guardian.lastName}`}
+                      mobile={link.guardian.phone}
+                    />
+                  )}
+                  <ConfirmDialog
                   trigger={
                     <Button
                       variant="ghost"
@@ -131,7 +178,8 @@ export function GuardiansSection({ studentId, links }: { studentId: string; link
                   confirmLabel="Remove"
                   action={unlinkGuardianAction}
                   hiddenFields={{ studentId, guardianId: link.guardian.id }}
-                />
+                  />
+                </div>
               </li>
             ))}
           </ul>

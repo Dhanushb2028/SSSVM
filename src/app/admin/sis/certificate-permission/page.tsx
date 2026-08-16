@@ -5,7 +5,12 @@ import { CertificatePermissionForm } from "./certificate-permission-form";
 export default async function CertificatePermissionPage() {
   const session = await requirePermissionOrRedirect("sis.certificate_permission", "VIEW");
   const students = await db.student.findMany({
-    where: { deletedAt: null, status: "ACTIVE", ...(session.branchId ? { branchId: session.branchId } : {}) },
+    where: {
+      deletedAt: null,
+      status: "ACTIVE",
+      sectionId: { not: null },
+      ...(session.branchId ? { branchId: session.branchId } : {}),
+    },
     include: { section: { include: { course: true } } },
     orderBy: { firstName: "asc" },
     take: 500,

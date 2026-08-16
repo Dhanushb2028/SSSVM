@@ -1,216 +1,36 @@
-import type { ReactNode } from "react";
-import {
-  LayoutDashboard,
-  CalendarRange,
-  Building2,
-  Landmark,
-  Users,
-  ShieldCheck,
-  UserCircle,
-  LayoutGrid,
-  GraduationCap,
-  Upload,
-  ArrowUpCircle,
-  ArrowLeftRight,
-  BarChart3,
-  LogOut,
-  Trash2,
-  IdCard,
-  FileCheck2,
-  Cake,
-  GalleryHorizontal,
-  ClipboardCheck,
-  ClipboardList,
-  CalendarDays,
-  BookMarked,
-  CalendarClock,
-  NotebookPen,
-  ListChecks,
-  FileEdit,
-  PenLine,
-  Ticket,
-  FileBarChart,
-  Trophy,
-  Table2,
-  Layers,
-  BookOpen,
-  Bell,
-  Megaphone,
-  Image as ImageIcon,
-  Video,
-  MessageCircle,
-  Send,
-  Wallet,
-  Receipt,
-  BookText,
-  Landmark as BankIcon,
-  FileSpreadsheet,
-  UserSearch,
-  Kanban,
-  FileText,
-  ClipboardType,
-  Briefcase,
-  CalendarCheck,
-  IndianRupee,
-  Bus,
-  Route,
-  Building,
-} from "lucide-react";
-import { requireRole, hasPermission } from "@/lib/rbac/permissions";
+import { requireRole } from "@/lib/rbac/permissions";
 import { getSession } from "@/lib/auth/session";
-import type { ModuleKey } from "@/lib/rbac/modules";
-import { DesktopShell, type NavSection } from "@/components/nav/desktop-shell";
+import { getVisibleAdminNav } from "@/lib/nav/admin-nav";
+import { SidebarShell, type SidebarEntry } from "@/components/nav/sidebar-shell";
 import { LogoutForm } from "@/components/nav/logout-form";
-import type { AppSession } from "@/lib/auth/session";
-
-type NavItemDef = { label: string; href: string; icon: ReactNode; module: ModuleKey };
-
-function buildSection(session: AppSession | null, title: string, items: NavItemDef[]): NavSection | null {
-  const visible = items.filter((item) => hasPermission(session, item.module, "VIEW"));
-  if (visible.length === 0) return null;
-  return { title, items: visible.map(({ label, href, icon }) => ({ label, href, icon })) };
-}
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireRole("ADMIN");
   const session = await getSession();
-  const icon = (Icon: typeof LayoutDashboard) => <Icon aria-hidden="true" className="size-4" />;
 
-  const navSections: NavSection[] = [
-    {
-      title: "Overview",
-      items: [{ label: "Dashboard", href: "/admin/dashboard", icon: icon(LayoutDashboard) }],
-    },
-  ];
-
-  const systemSetup = buildSection(session, "System Setup", [
-    { label: "Academic Years", href: "/admin/system-setup/academic-years", icon: icon(CalendarRange), module: "system.academic_years" },
-    { label: "Organizations", href: "/admin/system-setup/organizations", icon: icon(Landmark), module: "system.organizations" },
-    { label: "Branches", href: "/admin/system-setup/branches", icon: icon(Building2), module: "system.branches" },
-    { label: "Courses & Subjects", href: "/admin/system-setup/master-data", icon: icon(Layers), module: "system.master_data" },
-  ]);
-  if (systemSetup) navSections.push(systemSetup);
-
-  const usersRoles = buildSection(session, "Users & Roles", [
-    { label: "User Accounts", href: "/admin/users/accounts", icon: icon(Users), module: "users.accounts" },
-    { label: "Roles & Permissions", href: "/admin/users/roles", icon: icon(ShieldCheck), module: "users.roles" },
-  ]);
-  if (usersRoles) navSections.push(usersRoles);
-
-  const sections = buildSection(session, "Sections", [
-    { label: "Sections", href: "/admin/sections", icon: icon(LayoutGrid), module: "sections.manage" },
-  ]);
-  if (sections) navSections.push(sections);
-
-  const sis = buildSection(session, "Student Information", [
-    { label: "Student Master", href: "/admin/sis/students", icon: icon(GraduationCap), module: "sis.students" },
-    { label: "Bulk Upload", href: "/admin/sis/bulk-upload", icon: icon(Upload), module: "sis.bulk_upload" },
-    { label: "Promote", href: "/admin/sis/promote", icon: icon(ArrowUpCircle), module: "sis.promote" },
-    { label: "Section Change", href: "/admin/sis/section-change", icon: icon(ArrowLeftRight), module: "sis.section_change" },
-    { label: "Strength / Abstract", href: "/admin/sis/reports", icon: icon(BarChart3), module: "sis.reports" },
-    { label: "Outgoing Students", href: "/admin/sis/outgoing", icon: icon(LogOut), module: "sis.outgoing" },
-    { label: "Trash", href: "/admin/sis/trash", icon: icon(Trash2), module: "sis.trash" },
-    { label: "ID Cards", href: "/admin/sis/id-cards", icon: icon(IdCard), module: "sis.id_cards" },
-    { label: "Certificate Permission", href: "/admin/sis/certificate-permission", icon: icon(FileCheck2), module: "sis.certificate_permission" },
-    { label: "Birthday List", href: "/admin/sis/birthdays", icon: icon(Cake), module: "sis.birthdays" },
-    { label: "App Home Banners", href: "/admin/sis/banners", icon: icon(GalleryHorizontal), module: "sis.app_banners" },
-  ]);
-  if (sis) navSections.push(sis);
-
-  const attendance = buildSection(session, "Attendance", [
-    { label: "Mark Attendance", href: "/admin/attendance/mark", icon: icon(ClipboardCheck), module: "attendance.mark" },
-    { label: "Absentee Report", href: "/admin/attendance/reports", icon: icon(ClipboardList), module: "attendance.reports" },
-  ]);
-  if (attendance) navSections.push(attendance);
-
-  const academics = buildSection(session, "Academics", [
-    { label: "Timetable", href: "/admin/academics/timetable", icon: icon(CalendarDays), module: "academics.timetable" },
-    { label: "Syllabus", href: "/admin/academics/syllabus", icon: icon(BookMarked), module: "academics.syllabus" },
-    { label: "Schedule / Calendar", href: "/admin/academics/schedule", icon: icon(CalendarClock), module: "academics.schedule" },
-    { label: "Monthly Lesson Plans", href: "/admin/academics/lesson-plans", icon: icon(NotebookPen), module: "academics.lesson_plans" },
-  ]);
-  if (academics) navSections.push(academics);
-
-  const exams = buildSection(session, "Exams", [
-    { label: "Exam Types", href: "/admin/exams/types", icon: icon(ListChecks), module: "exams.types" },
-    { label: "Exams", href: "/admin/exams/exams", icon: icon(FileEdit), module: "exams.exams" },
-    { label: "Exam Timetable", href: "/admin/exams/exam-timetable", icon: icon(Table2), module: "exams.timetable" },
-    { label: "Marks Entry", href: "/admin/exams/marks-entry", icon: icon(PenLine), module: "exams.marks" },
-    { label: "Hall Tickets", href: "/admin/exams/hall-tickets", icon: icon(Ticket), module: "exams.hall_tickets" },
-    { label: "Progress Reports", href: "/admin/exams/progress-reports", icon: icon(FileBarChart), module: "exams.progress_reports" },
-    { label: "Competitive Exam Marks", href: "/admin/exams/competitive", icon: icon(Trophy), module: "exams.competitive" },
-    { label: "Result Reports", href: "/admin/exams/results", icon: icon(BarChart3), module: "exams.reports" },
-  ]);
-  if (exams) navSections.push(exams);
-
-  const communication = buildSection(session, "Communication", [
-    { label: "Homework", href: "/admin/homework", icon: icon(BookOpen), module: "homework.manage" },
-    { label: "Notifications", href: "/admin/notifications", icon: icon(Bell), module: "comms.notifications" },
-    { label: "Circulars", href: "/admin/circulars", icon: icon(Megaphone), module: "comms.circulars" },
-    { label: "Gallery", href: "/admin/gallery", icon: icon(ImageIcon), module: "comms.gallery" },
-    { label: "Videos", href: "/admin/videos", icon: icon(Video), module: "comms.videos" },
-    { label: "Chat", href: "/admin/chat", icon: icon(MessageCircle), module: "comms.chat" },
-    { label: "Bulk SMS", href: "/admin/bulk-sms", icon: icon(Send), module: "comms.sms" },
-  ]);
-  if (communication) navSections.push(communication);
-
-  const finance = buildSection(session, "Finance", [
-    { label: "Fee Structure", href: "/admin/finance/fee-structure", icon: icon(Wallet), module: "finance.fee_structure" },
-    { label: "Fee Ledger", href: "/admin/finance/ledger", icon: icon(Receipt), module: "finance.transactions" },
-    { label: "Fee Due Report", href: "/admin/finance/fee-due", icon: icon(FileSpreadsheet), module: "finance.reports" },
-    { label: "Expenditure", href: "/admin/finance/expenditure", icon: icon(BookText), module: "finance.expenditure" },
-    { label: "Banking", href: "/admin/finance/banking", icon: icon(BankIcon), module: "finance.banking" },
-    { label: "Reports", href: "/admin/finance/reports", icon: icon(BarChart3), module: "finance.reports" },
-  ]);
-  if (finance) navSections.push(finance);
-
-  const admissions = buildSection(session, "Admissions", [
-    { label: "Enquiries", href: "/admin/admissions/enquiries", icon: icon(Kanban), module: "admissions.enquiries" },
-    { label: "Marketing Officers", href: "/admin/admissions/meo", icon: icon(UserSearch), module: "admissions.meo" },
-    { label: "Applications", href: "/admin/admissions/applications", icon: icon(FileText), module: "admissions.applications" },
-    { label: "Reports", href: "/admin/admissions/reports", icon: icon(BarChart3), module: "admissions.reports" },
-  ]);
-  if (admissions) navSections.push(admissions);
-
-  const certificates = buildSection(session, "Certificates", [
-    { label: "Transfer Certificates", href: "/admin/certificates", icon: icon(FileCheck2), module: "certificates.tc" },
-    { label: "Bulk Upload", href: "/admin/certificates/bulk-upload", icon: icon(ClipboardType), module: "certificates.tc" },
-  ]);
-  if (certificates) navSections.push(certificates);
-
-  const hr = buildSection(session, "Staff / HR", [
-    { label: "Staff Master", href: "/admin/hr/staff", icon: icon(Briefcase), module: "hr.staff" },
-    { label: "Attendance / OD", href: "/admin/hr/attendance", icon: icon(CalendarCheck), module: "hr.attendance" },
-    { label: "Attendance / OD Report", href: "/admin/hr/attendance/reports", icon: icon(ClipboardList), module: "hr.attendance" },
-    { label: "Payroll", href: "/admin/hr/payroll", icon: icon(IndianRupee), module: "hr.payroll" },
-  ]);
-  if (hr) navSections.push(hr);
-
-  const transport = buildSection(session, "Transport", [
-    { label: "Vehicles", href: "/admin/transport/vehicles", icon: icon(Bus), module: "transport.vehicles" },
-    { label: "Routes & Stops", href: "/admin/transport/routes", icon: icon(Route), module: "transport.routes" },
-  ]);
-  if (transport) navSections.push(transport);
-
-  const hostel = buildSection(session, "Hostel", [
-    { label: "Hostel", href: "/admin/hostel", icon: icon(Building), module: "hostel.manage" },
-  ]);
-  if (hostel) navSections.push(hostel);
-
-  navSections.push({
-    title: "Account",
-    items: [{ label: "Profile", href: "/admin/profile", icon: icon(UserCircle) }],
+  const entries: SidebarEntry[] = getVisibleAdminNav(session).map((category) => {
+    const items = category.items.map((item) => ({
+      label: item.label,
+      href: item.href,
+      icon: <item.icon aria-hidden="true" className="size-4" />,
+    }));
+    // A single-item category (e.g. "Sections", "Account") is just a link — no need to
+    // make the user open a dropdown to reach the one page inside it.
+    if (items.length === 1) {
+      return { type: "link", label: category.title, href: items[0].href, icon: items[0].icon };
+    }
+    return { type: "group", title: category.title, icon: <category.icon aria-hidden="true" className="size-4" />, items };
   });
 
   return (
-    <DesktopShell
+    <SidebarShell
       portalLabel="Admin"
-      navSections={navSections}
+      entries={entries}
       userName={session?.displayName ?? "Admin"}
       userRoleLabel={session?.isSuperAdmin ? "Full Access Admin" : "Admin"}
       logoutForm={<LogoutForm />}
     >
       {children}
-    </DesktopShell>
+    </SidebarShell>
   );
 }

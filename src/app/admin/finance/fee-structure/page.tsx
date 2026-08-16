@@ -63,6 +63,7 @@ export default async function FeeStructurePage({
           </div>
           {branchId && courseId && academicYearId ? (
             <FeeStructureEditor
+              key={`${branchId}:${courseId}:${academicYearId}`}
               branchId={branchId}
               courseId={courseId}
               academicYearId={academicYearId}

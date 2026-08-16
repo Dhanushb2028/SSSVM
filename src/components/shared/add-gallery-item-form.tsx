@@ -11,7 +11,7 @@ type FormState = { error?: string; success?: boolean };
 export function AddGalleryItemForm({ albumId }: { albumId: string }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(addGalleryItemAction, {});
   return (
-    <form action={formAction} encType="multipart/form-data" className="flex flex-wrap items-end gap-2">
+    <form action={formAction} className="flex flex-wrap items-end gap-2">
       <input type="hidden" name="albumId" value={albumId} />
       <FormField id="gi-image" label="Photo" required>
         <Input id="gi-image" name="image" type="file" accept="image/png,image/jpeg,image/webp" required />

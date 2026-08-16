@@ -1,13 +1,24 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { format } from "date-fns";
 import { db } from "@/lib/db";
 import { getHomeworkDetail } from "@/server/services/homework";
+import { getSession } from "@/lib/auth/session";
+import { getTeacherSectionIds } from "@/lib/rbac/scope";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export async function HomeworkDetailContent({ id }: { id: string }) {
   const homework = await getHomeworkDetail(id);
   if (!homework) notFound();
+
+  const session = await getSession();
+  if (!session) redirect("/403");
+  if (session.role === "TEACHER") {
+    const sectionIds = await getTeacherSectionIds(session);
+    if (!sectionIds.includes(homework.sectionId)) redirect("/403");
+  } else if (session.role === "ADMIN" && session.branchId && session.branchId !== homework.section.branchId) {
+    redirect("/403");
+  }
 
   const students = await db.student.findMany({
     where: { sectionId: homework.sectionId, status: "ACTIVE", deletedAt: null },

@@ -15,7 +15,7 @@ export function LoginForm() {
     <form
       action={formAction}
       noValidate
-      className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-6 shadow-sm"
+      className="flex flex-col gap-4 rounded-xl border-t-4 border-x border-b border-x-border border-b-border border-t-gold-strong bg-surface p-6 shadow-lg shadow-slate-900/5"
     >
       <FormField id="identifier" label="Username or mobile number" required>
         <Input name="identifier" type="text" autoComplete="username" required />
@@ -32,7 +32,7 @@ export function LoginForm() {
         {pending ? "Signing in…" : "Sign in"}
       </Button>
       <p className="text-center text-xs text-muted-foreground">
-        Staff sign in with their username. Students and parents sign in with their registered mobile number.
+        Staff and students sign in with their username. Parents sign in with their registered mobile number.
       </p>
     </form>
   );

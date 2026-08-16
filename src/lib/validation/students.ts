@@ -15,6 +15,18 @@ export const studentSchema = z.object({
   admissionDate: z.string().min(1, "Admission date is required"),
 });
 
+export const generateStudentLoginSchema = z.object({
+  studentId: z.string().min(1),
+  username: z.string().trim().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export const generateGuardianLoginSchema = z.object({
+  guardianId: z.string().min(1),
+  studentId: z.string().min(1),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
 export const guardianLinkSchema = z.object({
   studentId: z.string().min(1),
   phone: z.string().trim().min(6, "Enter a valid phone number"),

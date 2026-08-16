@@ -12,11 +12,14 @@ export async function AttendanceMarkPageContent({
 }) {
   const session = await getSession();
   const sp = await searchParams;
-  const sectionId = typeof sp.sectionId === "string" ? sp.sectionId : undefined;
+  const requestedSectionId = typeof sp.sectionId === "string" ? sp.sectionId : undefined;
   const today = new Date().toISOString().slice(0, 10);
   const date = typeof sp.date === "string" && sp.date ? sp.date : today;
 
   const sections = session ? await listActionableSections(session) : [];
+  // The picker only ever offers sections this user can act on, but the id still arrives via
+  // an editable URL param — re-check membership rather than trusting it directly.
+  const sectionId = requestedSectionId && sections.some((s) => s.id === requestedSectionId) ? requestedSectionId : undefined;
   const roster = sectionId ? await getRosterWithAttendance(sectionId, date) : [];
 
   return (

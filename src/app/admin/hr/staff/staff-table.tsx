@@ -75,12 +75,17 @@ export function StaffTable({
   totalCount,
   params,
   branches,
+  status,
 }: {
   rows: StaffRow[];
   totalCount: number;
   params: TableParams;
   branches: { id: string; name: string }[];
+  status?: string;
 }) {
+  const exportParams = new URLSearchParams({ q: params.q });
+  if (status) exportParams.set("status", status);
+
   return (
     <DataTable
       caption="Staff"
@@ -88,7 +93,7 @@ export function StaffTable({
       data={rows}
       totalCount={totalCount}
       params={params}
-      exportHref={`/admin/hr/staff/export?q=${encodeURIComponent(params.q)}`}
+      exportHref={`/admin/hr/staff/export?${exportParams.toString()}`}
       searchPlaceholder="Search staff…"
       emptyMessage="No staff records yet."
       toolbarExtra={<StaffFormDialog mode="create" branches={branches} />}

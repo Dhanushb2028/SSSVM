@@ -4,7 +4,6 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { Trash2 } from "lucide-react";
 import { DataTable } from "@/components/data-table/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import type { TableParams } from "@/lib/data-table/params";
 import { deleteBranchAction } from "@/server/actions/branch-actions";
@@ -16,7 +15,6 @@ export type BranchRow = {
   city: string | null;
   address: string | null;
   phone: string | null;
-  isHostel: boolean;
   organizationId: string;
   organization: { name: string };
 };
@@ -26,16 +24,6 @@ function makeColumns(organizations: { id: string; name: string }[]): ColumnDef<B
     { accessorKey: "name", header: "Name" },
     { id: "organization", header: "Organization", cell: ({ row }) => row.original.organization.name },
     { accessorKey: "city", header: "City", cell: ({ row }) => row.original.city ?? "—" },
-    {
-      id: "isHostel",
-      header: "Hostel",
-      cell: ({ row }) =>
-        row.original.isHostel ? (
-          <StatusBadge tone="success">Yes</StatusBadge>
-        ) : (
-          <StatusBadge tone="neutral">No</StatusBadge>
-        ),
-    },
     {
       id: "actions",
       header: "Actions",

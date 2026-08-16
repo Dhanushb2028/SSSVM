@@ -1,10 +1,12 @@
 import { Download } from "lucide-react";
 import { requirePermissionOrRedirect } from "@/lib/rbac/permissions";
 import { db } from "@/lib/db";
-import { getExamResultsForSection } from "@/server/services/exam-results";
+import { getExamResultsForSection, getGradeTrends } from "@/server/services/exam-results";
 import { UrlFilterSelect } from "@/components/data-table/url-filter-select";
 import { SectionPickerSelect } from "@/components/shared/section-picker-select";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GradeTrendChart } from "./grade-trend-chart";
 
 export default async function ResultReportsPage({
   searchParams,
@@ -26,6 +28,7 @@ export default async function ResultReportsPage({
   ]);
 
   const results = examId && sectionId ? await getExamResultsForSection(examId, sectionId) : [];
+  const gradeTrends = await getGradeTrends(session.branchId);
 
   return (
     <div className="flex flex-col gap-4">
@@ -33,6 +36,19 @@ export default async function ResultReportsPage({
         <h1 className="text-xl font-semibold text-foreground">Result Reports</h1>
         <p className="text-sm text-muted-foreground">Filter by exam and section to see marks, totals, and rank.</p>
       </div>
+
+      {gradeTrends.rows.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Grade trends by class</CardTitle>
+            <CardDescription>Average % scored across exams, one line per class (course).</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GradeTrendChart rows={gradeTrends.rows} courseNames={gradeTrends.courseNames} />
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex flex-wrap items-end gap-3">
         <UrlFilterSelect paramKey="examId" placeholder="Select exam" options={exams.map((e) => ({ value: e.id, label: e.name }))} />
         <SectionPickerSelect paramKey="sectionId" label="Select section" sections={sections} />

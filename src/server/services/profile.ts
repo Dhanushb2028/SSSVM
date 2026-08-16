@@ -70,7 +70,12 @@ export async function updateOwnProfile(
   if (session.studentId) {
     await db.student.update({
       where: { id: session.studentId },
-      data: { contactEmail: data.email || null, contactPhone: data.phone || null },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        contactEmail: data.email || null,
+        contactPhone: data.phone || null,
+      },
     });
     return;
   }

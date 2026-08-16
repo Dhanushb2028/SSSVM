@@ -19,7 +19,6 @@ export async function GET(request: Request) {
       City: r.city ?? "",
       Address: r.address ?? "",
       Phone: r.phone ?? "",
-      Hostel: r.isHostel ? "Yes" : "No",
     })),
     "branches.csv",
   );

@@ -15,6 +15,7 @@ export const examSchema = z.object({
   branchId: z.string().min(1, "Select a branch"),
   academicYearId: z.string().min(1, "Select an academic year"),
   examTypeId: z.string().min(1, "Select an exam type"),
+  courseId: z.string().min(1, "Select a grade"),
   name: z.string().trim().min(1, "Name is required"),
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().min(1, "End date is required"),

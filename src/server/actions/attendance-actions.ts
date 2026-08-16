@@ -28,6 +28,10 @@ export async function markAttendanceAction(_prev: FormState, formData: FormData)
 
   await requireSectionActionAccess(session, parsed.data.sectionId, "attendance.mark");
 
+  const studentIds = parsed.data.records.map((r) => r.studentId);
+  const enrolledCount = await db.student.count({ where: { id: { in: studentIds }, sectionId: parsed.data.sectionId } });
+  if (enrolledCount !== studentIds.length) return { error: "One or more students are not in this section." };
+
   const date = new Date(parsed.data.date);
   await db.$transaction(
     parsed.data.records.map((r) =>

@@ -31,11 +31,12 @@ export async function listStaff(params: TableParams, scopeBranchId: string | nul
   return { rows, totalCount };
 }
 
-export async function listAllStaffForExport(q: string, scopeBranchId: string | null) {
+export async function listAllStaffForExport(q: string, scopeBranchId: string | null, status?: string) {
   return db.staffMember.findMany({
     where: {
       deletedAt: null,
       ...(scopeBranchId ? { branchId: scopeBranchId } : {}),
+      ...(status ? { status: status as "ACTIVE" | "LEFT" } : {}),
       ...(q
         ? {
             OR: [

@@ -28,8 +28,15 @@ export function IssueTcDialog({ studentId, studentName }: { studentId: string; s
       <DialogContent title="Issue Transfer Certificate" description={`Issue a TC for ${studentName}.`}>
         <form action={formAction} className="flex flex-col gap-4">
           <input type="hidden" name="studentId" value={studentId} />
-          <FormField id="tc-number" label="TC Number" required>
-            <Input id="tc-number" name="tcNumber" required />
+          <FormField id="tc-number" label="TC Number" required hint="Format: TC-1234">
+            <Input
+              id="tc-number"
+              name="tcNumber"
+              required
+              pattern="[A-Za-z]{2,}-\d{3,}"
+              title="Letters, a hyphen, then at least 3 digits — e.g. TC-1234"
+              placeholder="TC-1234"
+            />
           </FormField>
           {state?.error && (
             <p role="alert" className="text-sm text-danger">

@@ -11,13 +11,16 @@ type FormState = { error?: string; success?: boolean };
 export async function issueTcAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await requirePermission("certificates.tc", "CREATE");
   const studentId = String(formData.get("studentId") ?? "");
-  const tcNumber = String(formData.get("tcNumber") ?? "").trim();
+  const tcNumber = String(formData.get("tcNumber") ?? "").trim().toUpperCase();
   if (!studentId) return { error: "Missing student id" };
-  if (!tcNumber) return { error: "TC number is required" };
+  if (!/^[A-Z]{2,}-\d{3,}$/.test(tcNumber)) {
+    return { error: "TC number must look like TC-1234 (letters, a hyphen, then at least 3 digits)." };
+  }
 
   const student = await db.student.findUnique({ where: { id: studentId } });
   if (!student) return { error: "Student not found." };
   assertBranchAccess(session, student.branchId);
+  if (!student.sectionId) return { error: "This student was never placed in a section and cannot be issued a TC." };
   if (!student.tcEligible) return { error: "This student is not marked eligible for TC issuance." };
   if (student.tcIssued) return { error: "TC has already been issued for this student." };
 

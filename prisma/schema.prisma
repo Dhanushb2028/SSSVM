@@ -40,7 +40,6 @@ model Branch {
   city           String?
   address        String?
   phone          String?
-  isHostel       Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
@@ -68,7 +67,6 @@ model Branch {
   payslips           Payslip[]
   vehicles           Vehicle[]
   transportRoutes    TransportRoute[]
-  hostels            Hostel[]
 
   @@index([organizationId])
   @@map("branches")
@@ -108,6 +106,7 @@ model Course {
   sections           Section[]
   feeStructures      FeeStructure[]
   admissionEnquiries AdmissionEnquiry[]
+  exams              Exam[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -211,7 +210,6 @@ model Student {
   nationality     String?
   category        String?
   routeStopId     String?
-  hostelRoomId    String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
@@ -219,7 +217,6 @@ model Student {
   branch               Branch                @relation(fields: [branchId], references: [id])
   section              Section?              @relation(fields: [sectionId], references: [id])
   routeStop            RouteStop?            @relation(fields: [routeStopId], references: [id])
-  hostelRoom           HostelRoom?           @relation(fields: [hostelRoomId], references: [id])
   guardians            StudentGuardian[]
   user                 User?
   attendance           Attendance[]
@@ -236,7 +233,6 @@ model Student {
   @@index([status])
   @@index([deletedAt])
   @@index([routeStopId])
-  @@index([hostelRoomId])
   @@map("students")
 }
 
@@ -322,7 +318,6 @@ model StaffMember {
   attendance        StaffAttendance[]
   salaryStructure   StaffSalaryComponent[]
   payslips          Payslip[]
-  wardenOf          Hostel[]
 
   @@index([branchId])
   @@index([deletedAt])
@@ -610,6 +605,7 @@ model Exam {
   branchId       String
   academicYearId String
   examTypeId     String
+  courseId       String
   name           String
   startDate      DateTime  @db.Date
   endDate        DateTime  @db.Date
@@ -621,10 +617,12 @@ model Exam {
   branch       Branch        @relation(fields: [branchId], references: [id])
   academicYear AcademicYear  @relation(fields: [academicYearId], references: [id])
   examType     ExamType      @relation(fields: [examTypeId], references: [id])
+  course       Course        @relation(fields: [courseId], references: [id])
   subjects     ExamSubject[]
 
   @@index([branchId])
   @@index([academicYearId])
+  @@index([courseId])
   @@map("exams")
 }
 
@@ -1199,36 +1197,3 @@ model RouteStop {
   @@map("route_stops")
 }
 
-// ---------------------------------------------------------------------------
-// Hostel (Phase 8)
-// ---------------------------------------------------------------------------
-
-model Hostel {
-  id        String    @id @default(cuid())
-  branchId  String
-  name      String
-  wardenId  String?
-  deletedAt DateTime?
-
-  branch Branch       @relation(fields: [branchId], references: [id])
-  warden StaffMember? @relation(fields: [wardenId], references: [id])
-  rooms  HostelRoom[]
-
-  @@unique([branchId, name])
-  @@index([branchId])
-  @@map("hostels")
-}
-
-model HostelRoom {
-  id         String @id @default(cuid())
-  hostelId   String
-  roomNumber String
-  capacity   Int
-
-  hostel   Hostel    @relation(fields: [hostelId], references: [id])
-  students Student[]
-
-  @@unique([hostelId, roomNumber])
-  @@index([hostelId])
-  @@map("hostel_rooms")
-}

@@ -66,19 +66,6 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
       )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Getting started</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
-          <p>Phases 1–2 are live: System Setup, Users &amp; Roles, Sections, and the Student Information System core.</p>
-          <p>
-            Attendance, exams, finance, admissions, and the rest of the module set roll out in the phases that
-            follow — see ARCHITECTURE.md for the build order.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

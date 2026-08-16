@@ -15,15 +15,24 @@ export async function MarksEntryPageContent({
   const sp = await searchParams;
   const examId = typeof sp.examId === "string" ? sp.examId : undefined;
   const examSubjectId = typeof sp.examSubjectId === "string" ? sp.examSubjectId : undefined;
-  const sectionId = typeof sp.sectionId === "string" ? sp.sectionId : undefined;
+  const requestedSectionId = typeof sp.sectionId === "string" ? sp.sectionId : undefined;
 
-  const [exams, sections] = await Promise.all([
+  const [exams, allSections] = await Promise.all([
     db.exam.findMany({
       where: { deletedAt: null, ...(session?.branchId ? { branchId: session.branchId } : {}) },
       orderBy: { startDate: "desc" },
     }),
     session ? listActionableSections(session) : [],
   ]);
+
+  const selectedExam = examId ? exams.find((e) => e.id === examId) : undefined;
+  // Only offer sections in the exam's own grade — entering marks against the wrong grade's
+  // roster would corrupt exam records.
+  const sections = selectedExam ? allSections.filter((s) => s.courseId === selectedExam.courseId) : allSections;
+
+  // The picker only offers sections this user can act on; re-check membership since the id
+  // still arrives via an editable URL param.
+  const sectionId = requestedSectionId && sections.some((s) => s.id === requestedSectionId) ? requestedSectionId : undefined;
 
   const examSubjects = examId
     ? await db.examSubject.findMany({ where: { examId }, include: { subject: true } })

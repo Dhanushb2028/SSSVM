@@ -13,7 +13,7 @@ const QUICK_LINKS = [
   { label: "Notifications", href: "/parent/notifications", icon: Bell },
   { label: "Gallery", href: "/parent/gallery", icon: ImageIcon },
   { label: "Videos", href: "/parent/videos", icon: Video },
-  { label: "Chat", href: "/parent/chat", icon: MessageCircle },
+  { label: "Messages", href: "/parent/messages", icon: MessageCircle },
 ];
 
 export default async function ParentDashboardPage() {
