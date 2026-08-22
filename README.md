@@ -34,7 +34,7 @@ Visit `http://localhost:3000` — you'll be redirected to `/login`.
 
 | Role | Identifier | Password | Notes |
 |---|---|---|---|
-| Admin (full access) | `admin` | `Admin@12345` | Principal account, unrestricted |
+| Admin (full access) | `admin` | `Admin` | Principal account, unrestricted |
 | Admin (scoped) | `frontoffice` | `FrontOffice@123` | "Front Office" permission profile — admissions/certificates/ID cards only |
 | Teacher | `priya.reddy` | `Teacher@123` | Class teacher of Grade 5-A |
 | Student | `9222222222` | `Student@123` | Mobile-number login |
